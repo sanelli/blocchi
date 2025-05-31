@@ -1,43 +1,17 @@
+mod game;
+
 use bevy::prelude::*;
-
-#[derive(Copy, Clone, Debug)]
-struct GameBoard {
-    board: [u8; 10 /* column */ * 20],
-}
-
-enum TetrominoType {
-    I,
-    O,
-    T,
-    J,
-    L,
-    S,
-    Z,
-}
-
-enum TetrominoRotation {
-    Zero,        // 0 degrees
-    HalfPi,      // 90 degrees
-    Pi,          // 180 degrees
-    ThreeHalfPi, // 270 degrees
-}
-
-struct TetrominoPosition {
-    row: usize,
-    col: usize,
-}
-
-struct Tetromino {
-    tetromino: TetrominoType,
-    position: TetrominoPosition,
-    rotation: TetrominoRotation,
-}
+use bevy_prng::ChaCha8Rng;
+use bevy_rand::prelude::*;
 
 fn main() {
     let mut app = App::new();
-    app.add_plugins((DefaultPlugins,))
+    app
+        .add_plugins(DefaultPlugins)
+        .add_plugins(EntropyPlugin::<ChaCha8Rng>::default())
         .add_systems(Startup, setup)
-        .add_systems(Update, paint);
+        .add_systems(Update, paint)
+        .insert_resource(game::GameBoard::new());
     app.run();
 }
 
@@ -48,6 +22,8 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut config_store: ResMut<GizmoConfigStore>,
+    mut rng: GlobalEntropy<ChaCha8Rng>,
+    mut game_board: ResMut<game::GameBoard>,
 ) {
     commands.spawn(Camera2d);
 
@@ -56,8 +32,8 @@ fn setup(
 
     for row in 0..22 {
         for col in 0..12 {
-            if (row != 0 && row != 21) {
-                if (col != 0 && col != 11) {
+            if row != 0 && row != 21 {
+                if col != 0 && col != 11 {
                     continue;
                 }
             }
@@ -67,7 +43,7 @@ fn setup(
                 MeshMaterial2d(materials.add(gray1)),
                 Transform::from_xyz(
                     SQUARE_SIZE / 2.0 - 6.0 * SQUARE_SIZE + col as f32 * SQUARE_SIZE,
-                    SQUARE_SIZE / 2.0 -11.0 * SQUARE_SIZE + row as f32 * SQUARE_SIZE,
+                    SQUARE_SIZE / 2.0 - 11.0 * SQUARE_SIZE + row as f32 * SQUARE_SIZE,
                     0.0,
                 ),
             ));
@@ -76,49 +52,34 @@ fn setup(
 
     let (config, _) = config_store.config_mut::<DefaultGizmoConfigGroup>();
     config.line.width = 3.0;
+
+   game_board.init(&mut rng);
 }
 
-fn paint(mut gizmos: Gizmos) {
+fn paint(
+    mut gizmos: Gizmos,
+    mut game_board: ResMut<game::GameBoard>,
+) {
     let gray2 = Color::linear_rgb(0.3, 0.3, 0.3);
 
     for row in 0..22 {
         for col in 0..12 {
-            if (row != 0 && row != 21) {
-                if (col != 0 && col != 11) {
+            if row != 0 && row != 21 {
+                if col != 0 && col != 11 {
                     continue;
                 }
             }
 
             gizmos.rect_2d(
-                Isometry2d::from_xy(SQUARE_SIZE / 2.0 - 6.0 * SQUARE_SIZE + col as f32 * SQUARE_SIZE,
-                                    SQUARE_SIZE / 2.0 -11.0 * SQUARE_SIZE + row as f32 * SQUARE_SIZE,),
+                Isometry2d::from_xy(
+                    SQUARE_SIZE / 2.0 - 6.0 * SQUARE_SIZE + col as f32 * SQUARE_SIZE,
+                    SQUARE_SIZE / 2.0 - 11.0 * SQUARE_SIZE + row as f32 * SQUARE_SIZE,
+                ),
                 Vec2::splat(SQUARE_SIZE),
                 gray2,
             )
         }
     }
-}
 
-impl Default for GameBoard {
-    fn default() -> Self {
-        GameBoard {
-            board: [0; 10 * 20],
-        }
-    }
-}
-
-impl Tetromino {
-    fn current_occupied_cells(&self) -> [u8; 4] {
-        todo!();
-    }
-}
-
-impl GameBoard {
-    fn get(&self, row: usize, col: usize) -> u8 {
-        self.board[row * 10 + col]
-    }
-
-    fn set(&mut self, row: usize, col: usize, value: u8) {
-        self.board[row * 10 + col] = value;
-    }
+    game_board.set(1, 2, 4);
 }
