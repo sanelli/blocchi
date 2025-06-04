@@ -69,6 +69,13 @@ impl Tetromino {
             rotation: TetrominoRotation::Zero,
         }
     }
+
+    fn get_cells(&self) -> [u8; 4]
+    {
+        // TODO : GET THE CORRECT CELLS DEPENDING ON TETROMINO, POSITION, ROTATION
+        let mut result : [u8; 4] = [0,1,2,3];
+        return result;
+    }
 }
 
 impl TetrominoProvider {
@@ -86,5 +93,13 @@ impl TetrominoProvider {
     {
         self.current = (&self.next).clone();
         self.next = Tetromino::new(rng);
+    }
+
+    pub fn get_current_type(&self) -> &TetrominoType {
+        &self.current.tetromino
+    }
+
+    pub fn get_current_cells(&self) -> [u8; 4] {
+        self.current.get_cells()
     }
 }

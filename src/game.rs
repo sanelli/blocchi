@@ -1,7 +1,11 @@
 use bevy::prelude::Resource;
 use rand::Rng;
+use crate::game::tetromino::TetrominoType;
 
 pub mod tetromino;
+
+pub const NUMBER_OF_ROWS: u8 = 20;
+pub const NUMBER_OF_COLUMNS: u8 = 10;
 
 #[derive(Debug, Resource)]
 pub struct GameBoard {
@@ -13,7 +17,7 @@ impl GameBoard {
     pub fn new() -> Self
     {
         GameBoard {
-            board: [0; 10 * 20],
+            board: [0; NUMBER_OF_ROWS as usize * NUMBER_OF_COLUMNS as usize],
             provider: None,
         }
     }
@@ -24,11 +28,21 @@ impl GameBoard {
         self.provider = Some(tetromino::TetrominoProvider::new(rng));
     }
 
-    pub fn get(&self, row: usize, col: usize) -> u8 {
-        self.board[row * 10 + col]
+    pub fn get_current_tetromino_type(&self) -> &TetrominoType
+    {
+        if let Some(provider) = &self.provider {
+            provider.get_current_type()
+        } else {
+            panic!("Provider has not been initialized.");
+        }
     }
 
-    pub fn set(&mut self, row: usize, col: usize, value: u8) {
-        self.board[row * 10 + col] = value;
+    pub fn get_current_cells(&self) -> [u8; 4]
+    {
+        if let Some(provider) = &self.provider {
+            provider.get_current_cells()
+        } else {
+            panic!("Provider has not been initialized.");
+        }
     }
 }
