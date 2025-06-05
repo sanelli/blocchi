@@ -154,10 +154,6 @@ fn get_row_and_column_by_cell(cell: u8) -> (u8, u8) {
     )
 }
 
-fn get_cell_from_row_and_column(row: u8, col: u8) -> u8 {
-    row * game::NUMBER_OF_COLUMNS + col
-}
-
 fn get_transform_by_board_cell(cell: u8) -> Transform {
     let (row, col) = get_row_and_column_by_cell(cell);
     Transform::from_xyz(

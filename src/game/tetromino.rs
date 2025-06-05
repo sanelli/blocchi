@@ -1,3 +1,4 @@
+use crate::game;
 use rand::Rng;
 
 #[derive(Clone, Debug)]
@@ -21,8 +22,8 @@ pub enum TetrominoRotation {
 
 #[derive(Clone, Debug)]
 pub struct TetrominoPosition {
-    row: usize,
-    col: usize,
+    row: u8,
+    col: u8,
 }
 
 #[derive(Clone, Debug)]
@@ -33,8 +34,7 @@ pub struct Tetromino {
 }
 
 #[derive(Debug)]
-pub struct TetrominoProvider
-{
+pub struct TetrominoProvider {
     current: Tetromino,
     next: Tetromino,
 }
@@ -63,24 +63,134 @@ impl Tetromino {
     where
         R: Rng + ?Sized,
     {
+        fn get_starting_column(tetromino_type: &TetrominoType) -> u8{
+            match tetromino_type {
+                TetrominoType::I => 4,
+                TetrominoType::O => 4,
+                TetrominoType::T => 5,
+                TetrominoType::J => 5,
+                TetrominoType::L => 4,
+                TetrominoType::S => 4,
+                TetrominoType::Z => 5,
+            }
+        }
+
+        let tetromino_type = TetrominoType::random(rng);
+        let starting_column = get_starting_column(&tetromino_type);
+
         Self {
-            tetromino: TetrominoType::random(rng),
-            position: TetrominoPosition { row: 0, col: 4 },
+            tetromino: tetromino_type,
+            position: TetrominoPosition { row: 0, col: starting_column },
             rotation: TetrominoRotation::Zero,
         }
     }
 
-    fn get_cells(&self) -> [u8; 4]
-    {
-        // TODO : GET THE CORRECT CELLS DEPENDING ON TETROMINO, POSITION, ROTATION
-        let mut result : [u8; 4] = [0,1,2,3];
-        return result;
+    // TODO: Handle rotation
+    fn get_cells(&self) -> [u8; 4] {
+        fn handle_i(tetromino: &Tetromino) -> [u8; 4] {
+            let position = &tetromino.position;
+            let row = position.row;
+            let col = position.col;
+            [
+                Tetromino::get_cell_from_row_and_column(row, col),
+                Tetromino::get_cell_from_row_and_column(row + 1, col),
+                Tetromino::get_cell_from_row_and_column(row + 2, col),
+                Tetromino::get_cell_from_row_and_column(row + 3, col),
+            ]
+        }
+
+        fn handle_t(tetromino: &Tetromino) -> [u8; 4] {
+            let position = &tetromino.position;
+            let row = position.row;
+            let col = position.col;
+            [
+                Tetromino::get_cell_from_row_and_column(row, col),
+                Tetromino::get_cell_from_row_and_column(row + 1, col),
+                Tetromino::get_cell_from_row_and_column(row, col - 1),
+                Tetromino::get_cell_from_row_and_column(row, col + 1),
+            ]
+        }
+
+        fn handle_j(tetromino: &Tetromino) -> [u8; 4] {
+            let position = &tetromino.position;
+            let row = position.row;
+            let col = position.col;
+            [
+                Tetromino::get_cell_from_row_and_column(row, col),
+                Tetromino::get_cell_from_row_and_column(row + 1, col),
+                Tetromino::get_cell_from_row_and_column(row + 2, col),
+                Tetromino::get_cell_from_row_and_column(row + 2, col - 1),
+            ]
+        }
+
+        fn handle_l(tetromino: &Tetromino) -> [u8; 4] {
+            let position = &tetromino.position;
+            let row = position.row;
+            let col = position.col;
+            [
+                Tetromino::get_cell_from_row_and_column(row, col),
+                Tetromino::get_cell_from_row_and_column(row + 1, col),
+                Tetromino::get_cell_from_row_and_column(row + 2, col),
+                Tetromino::get_cell_from_row_and_column(row + 2, col + 1),
+            ]
+        }
+
+        fn handle_o(tetromino: &Tetromino) -> [u8; 4] {
+            let position = &tetromino.position;
+            let row = position.row;
+            let col = position.col;
+            [
+                Tetromino::get_cell_from_row_and_column(row, col),
+                Tetromino::get_cell_from_row_and_column(row + 1, col),
+                Tetromino::get_cell_from_row_and_column(row, col + 1),
+                Tetromino::get_cell_from_row_and_column(row + 1, col + 1),
+            ]
+        }
+
+        fn handle_s(tetromino: &Tetromino) -> [u8; 4] {
+            let position = &tetromino.position;
+            let row = position.row;
+            let col = position.col;
+            [
+                Tetromino::get_cell_from_row_and_column(row, col),
+                Tetromino::get_cell_from_row_and_column(row + 1, col),
+                Tetromino::get_cell_from_row_and_column(row, col + 1),
+                Tetromino::get_cell_from_row_and_column(row + 1, col - 1),
+            ]
+        }
+
+        fn handle_z(tetromino: &Tetromino) -> [u8; 4] {
+            let position = &tetromino.position;
+            let row = position.row;
+            let col = position.col;
+            [
+                Tetromino::get_cell_from_row_and_column(row, col),
+                Tetromino::get_cell_from_row_and_column(row + 1, col),
+                Tetromino::get_cell_from_row_and_column(row, col - 1),
+                Tetromino::get_cell_from_row_and_column(row + 1, col + 1),
+            ]
+        }
+
+        match self.tetromino {
+            TetrominoType::I => handle_i(&self),
+            TetrominoType::O => handle_o(&self),
+            TetrominoType::T => handle_t(&self),
+            TetrominoType::J => handle_j(&self),
+            TetrominoType::L => handle_l(&self),
+            TetrominoType::S => handle_s(&self),
+            TetrominoType::Z => handle_z(&self),
+        }
+    }
+
+    pub fn get_cell_from_row_and_column(row: u8, col: u8) -> u8 {
+        row * game::NUMBER_OF_COLUMNS + col
     }
 }
 
 impl TetrominoProvider {
     pub fn new<R>(rng: &mut R) -> Self
-    where R : Rng + ?Sized
+    where
+        R: Rng + ?Sized,
     {
         Self {
             current: Tetromino::new(rng),
@@ -89,7 +199,8 @@ impl TetrominoProvider {
     }
 
     pub fn next<R>(&mut self, rng: &mut R)
-    where R : Rng + ?Sized
+    where
+        R: Rng + ?Sized,
     {
         self.current = (&self.next).clone();
         self.next = Tetromino::new(rng);

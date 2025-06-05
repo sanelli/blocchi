@@ -9,7 +9,7 @@ pub const NUMBER_OF_COLUMNS: u8 = 10;
 
 #[derive(Debug, Resource)]
 pub struct GameBoard {
-    board: [u8; 10 /* column */ * 20],
+    board: [u8; NUMBER_OF_COLUMNS as usize * NUMBER_OF_ROWS as usize],
     provider: Option<tetromino::TetrominoProvider>,
 }
 
