@@ -136,7 +136,7 @@ fn paint_tetromino_outline(mut gizmos: Gizmos, game_board: Res<game::GameBoard>)
 fn update_tetromino_position(
     mut query: Query<&mut Transform, With<TetrominoCell>>,
     mut game_board: ResMut<GameBoard>,
-    mut gizmos: Gizmos,
+    gizmos: Gizmos,
     time: Res<Time>,
     mut config: ResMut<GameSettings>)
 {
