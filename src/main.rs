@@ -1,7 +1,7 @@
 mod game;
 
-use crate::game::tetromino::TetrominoType;
 use crate::game::GameBoard;
+use crate::game::tetromino::{DroppedStatus, TetrominoType};
 use bevy::prelude::*;
 use bevy_prng::ChaCha8Rng;
 use bevy_rand::prelude::*;
@@ -11,8 +11,7 @@ use std::time::Duration;
 struct TetrominoCell;
 
 #[derive(Resource)]
-struct GameSettings
-{
+struct GameSettings {
     descend_timer: Timer,
 }
 
@@ -25,7 +24,9 @@ fn main() {
         .add_systems(Update, paint_board_border_outline)
         .add_systems(Update, paint_tetromino_outline)
         .insert_resource(game::GameBoard::new())
-        .insert_resource(GameSettings { descend_timer: Timer::new(Duration::from_secs(1), TimerMode::Repeating) });
+        .insert_resource(GameSettings {
+            descend_timer: Timer::new(Duration::from_millis(500), TimerMode::Repeating),
+        });
     app.run();
 }
 
@@ -88,7 +89,7 @@ fn setup(
             TetrominoCell,
             Mesh2d(shape.clone()),
             MeshMaterial2d(materials.add(*color)),
-            get_transform_by_board_cell(tetromino_cell)
+            get_transform_by_board_cell(tetromino_cell),
         ));
     }
 }
@@ -123,10 +124,7 @@ fn paint_tetromino_outline(mut gizmos: Gizmos, game_board: Res<game::GameBoard>)
     for tetromino_cell in current_cells {
         let transformation = get_transform_by_board_cell(tetromino_cell);
         gizmos.rect_2d(
-            Isometry2d::from_xy(
-                transformation.translation.x,
-                transformation.translation.y,
-            ),
+            Isometry2d::from_xy(transformation.translation.x, transformation.translation.y),
             Vec2::splat(SQUARE_SIZE),
             *color,
         )
@@ -134,29 +132,64 @@ fn paint_tetromino_outline(mut gizmos: Gizmos, game_board: Res<game::GameBoard>)
 }
 
 fn update_tetromino_position(
-    mut query: Query<&mut Transform, With<TetrominoCell>>,
+    mut commands: Commands,
+    mut query: Query<(Entity, &mut Transform), With<TetrominoCell>>,
     mut game_board: ResMut<GameBoard>,
     gizmos: Gizmos,
     time: Res<Time>,
-    mut config: ResMut<GameSettings>)
-{
+    mut config: ResMut<GameSettings>,
+    mut rng: GlobalEntropy<ChaCha8Rng>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
     // tick the timer
     config.descend_timer.tick(time.delta());
 
     if config.descend_timer.just_finished() {
-        game_board.drop_down();
-        config.descend_timer.reset();
+        let dropped = game_board.drop_down();
 
-        let cells = game_board.get_current_cells();
-        for (index, ref mut transform) in query.iter_mut().enumerate()
-        {
-            let updated_transformation = get_transform_by_board_cell(cells[index]);
+        match dropped {
+            DroppedStatus::Dropped => {
+                let cells = game_board.get_current_cells();
+                for (index,  (_, ref mut transform)) in query.iter_mut().enumerate() {
+                    let updated_transformation = get_transform_by_board_cell(cells[index]);
 
-            transform.translation.x = updated_transformation.translation.x;
-            transform.translation.y = updated_transformation.translation.y;
+                    transform.translation.x = updated_transformation.translation.x;
+                    transform.translation.y = updated_transformation.translation.y;
+                }
+
+                paint_board_border_outline(gizmos);
+            }
+            DroppedStatus::NotDropped => {
+                for (entity, _) in query {
+                    commands.entity(entity).despawn();
+                }
+
+                // TODO : ADD THE FILLED CELLS (FIXED COLOR TO MAKE IT EASY)
+                // TODO : BORDER OF THE NEW FILLED CELLS
+
+                game_board.next_tetromino(&mut rng);
+
+                let shape = meshes.add(Rectangle::new(SQUARE_SIZE, SQUARE_SIZE));
+
+                let tetromino_type = game_board.get_current_tetromino_type();
+                let color = get_tetromino_color_by_type(&tetromino_type);
+                let current_cells = game_board.get_current_cells();
+
+                for tetromino_cell in current_cells {
+                    commands.spawn((
+                        TetrominoCell,
+                        Mesh2d(shape.clone()),
+                        MeshMaterial2d(materials.add(*color)),
+                        get_transform_by_board_cell(tetromino_cell),
+                    ));
+                }
+
+                paint_board_border_outline(gizmos);
+            }
         }
 
-        paint_board_border_outline(gizmos);
+        config.descend_timer.reset();
     }
 }
 

@@ -39,6 +39,12 @@ pub struct TetrominoProvider {
     next: Tetromino,
 }
 
+pub enum DroppedStatus
+{
+    Dropped,
+    NotDropped
+}
+
 impl TetrominoType {
     fn random<R>(rng: &mut R) -> Self
     where
@@ -198,8 +204,19 @@ impl Tetromino {
         row * game::NUMBER_OF_COLUMNS + col
     }
 
-    pub fn drop_down(&mut self){
-        self.position.row = std::cmp::min(game::NUMBER_OF_ROWS - self.tetromino.height(), self.position.row + 1);
+    // TODO: HANDLE THE STATUS WHEN THE CELL "BELOW" IS ALREADY FILLED
+    pub fn drop_down(&mut self, board: &[u8; game::NUMBER_OF_ROWS as usize * game::NUMBER_OF_COLUMNS as usize])
+    -> DroppedStatus
+    {
+        if self.position.row + self.tetromino.height() == game::NUMBER_OF_ROWS
+        {
+            return DroppedStatus::NotDropped;
+        }
+
+        let next_row = std::cmp::min(game::NUMBER_OF_ROWS - self.tetromino.height(), self.position.row + 1);
+        self.position.row = next_row;
+
+        DroppedStatus::Dropped
     }
 }
 
@@ -230,8 +247,9 @@ impl TetrominoProvider {
         self.current.get_cells()
     }
 
-    pub fn drop_down(&mut self)
+    pub fn drop_down(&mut self, board: &[u8; game::NUMBER_OF_ROWS as usize * game::NUMBER_OF_COLUMNS as usize])
+        -> DroppedStatus
     {
-        self.current.drop_down();
+        self.current.drop_down(&board)
     }
 }
