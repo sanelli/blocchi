@@ -1,18 +1,31 @@
 mod game;
 
 use crate::game::tetromino::TetrominoType;
+use crate::game::GameBoard;
 use bevy::prelude::*;
 use bevy_prng::ChaCha8Rng;
 use bevy_rand::prelude::*;
+use std::time::Duration;
+
+#[derive(Component)]
+struct TetrominoCell;
+
+#[derive(Resource)]
+struct GameSettings
+{
+    descend_timer: Timer,
+}
 
 fn main() {
     let mut app = App::new();
     app.add_plugins(DefaultPlugins)
         .add_plugins(EntropyPlugin::<ChaCha8Rng>::default())
         .add_systems(Startup, setup)
+        .add_systems(Update, update_tetromino_position)
         .add_systems(Update, paint_board_border_outline)
         .add_systems(Update, paint_tetromino_outline)
-        .insert_resource(game::GameBoard::new());
+        .insert_resource(game::GameBoard::new())
+        .insert_resource(GameSettings { descend_timer: Timer::new(Duration::from_secs(1), TimerMode::Repeating) });
     app.run();
 }
 
@@ -28,9 +41,6 @@ const GRAY: Color = Color::linear_rgb(0.7, 0.7, 0.7);
 const PINK: Color = Color::linear_rgb(1.0, 0.753, 0.796);
 const YELLOW: Color = Color::linear_rgb(1.0, 1.00, 0.00);
 const DARK_GRAY: Color = Color::linear_rgb(0.3, 0.3, 0.3);
-
-#[derive(Component)]
-struct TetrominoCell;
 
 fn setup(
     mut commands: Commands,
@@ -87,7 +97,7 @@ fn paint_board_border_outline(mut gizmos: Gizmos) {
     for row in 0..(game::NUMBER_OF_ROWS + 2) {
         for col in 0..(game::NUMBER_OF_COLUMNS + 2) {
             if row != 0 && row != (game::NUMBER_OF_ROWS + 1) {
-                if col != 0 && col != (game::NUMBER_OF_COLUMNS + 1)  {
+                if col != 0 && col != (game::NUMBER_OF_COLUMNS + 1) {
                     continue;
                 }
             }
@@ -104,22 +114,49 @@ fn paint_board_border_outline(mut gizmos: Gizmos) {
     }
 }
 
-fn paint_tetromino_outline(mut gizmos: Gizmos, mut game_board: ResMut<game::GameBoard>) {
+fn paint_tetromino_outline(mut gizmos: Gizmos, game_board: Res<game::GameBoard>) {
     let tetromino_type = game_board.get_current_tetromino_type();
 
     let color = get_tetromino_outline_color_by_type(&tetromino_type);
     let current_cells = game_board.get_current_cells();
 
     for tetromino_cell in current_cells {
-        let transformation =  get_transform_by_board_cell(tetromino_cell);
+        let transformation = get_transform_by_board_cell(tetromino_cell);
         gizmos.rect_2d(
             Isometry2d::from_xy(
                 transformation.translation.x,
                 transformation.translation.y,
             ),
             Vec2::splat(SQUARE_SIZE),
-           *color,
+            *color,
         )
+    }
+}
+
+fn update_tetromino_position(
+    mut query: Query<&mut Transform, With<TetrominoCell>>,
+    mut game_board: ResMut<GameBoard>,
+    mut gizmos: Gizmos,
+    time: Res<Time>,
+    mut config: ResMut<GameSettings>)
+{
+    // tick the timer
+    config.descend_timer.tick(time.delta());
+
+    if config.descend_timer.just_finished() {
+        game_board.drop_down();
+        config.descend_timer.reset();
+
+        let cells = game_board.get_current_cells();
+        for (index, ref mut transform) in query.iter_mut().enumerate()
+        {
+            let updated_transformation = get_transform_by_board_cell(cells[index]);
+
+            transform.translation.x = updated_transformation.translation.x;
+            transform.translation.y = updated_transformation.translation.y;
+        }
+
+        paint_board_border_outline(gizmos);
     }
 }
 

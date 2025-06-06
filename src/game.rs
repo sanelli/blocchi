@@ -1,6 +1,6 @@
-use bevy::prelude::Resource;
-use rand::Rng;
 use crate::game::tetromino::TetrominoType;
+use bevy::prelude::*;
+use rand::Rng;
 
 pub mod tetromino;
 
@@ -41,6 +41,15 @@ impl GameBoard {
     {
         if let Some(provider) = &self.provider {
             provider.get_current_cells()
+        } else {
+            panic!("Provider has not been initialized.");
+        }
+    }
+
+    pub fn drop_down(&mut self)
+    {
+        if let Some(provider) = &mut self.provider {
+            provider.drop_down();
         } else {
             panic!("Provider has not been initialized.");
         }

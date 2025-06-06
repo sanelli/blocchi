@@ -56,6 +56,18 @@ impl TetrominoType {
             _ => panic!("Invalid tetromino type"),
         }
     }
+
+    fn height(&self) -> u8 {
+        match self {
+            TetrominoType::I => 4,
+            TetrominoType::O => 2,
+            TetrominoType::T => 2,
+            TetrominoType::J => 3,
+            TetrominoType::L => 3,
+            TetrominoType::S => 2,
+            TetrominoType::Z => 2,
+        }
+    }
 }
 
 impl Tetromino {
@@ -185,6 +197,10 @@ impl Tetromino {
     pub fn get_cell_from_row_and_column(row: u8, col: u8) -> u8 {
         row * game::NUMBER_OF_COLUMNS + col
     }
+
+    pub fn drop_down(&mut self){
+        self.position.row = std::cmp::min(game::NUMBER_OF_ROWS - self.tetromino.height(), self.position.row + 1);
+    }
 }
 
 impl TetrominoProvider {
@@ -212,5 +228,10 @@ impl TetrominoProvider {
 
     pub fn get_current_cells(&self) -> [u8; 4] {
         self.current.get_cells()
+    }
+
+    pub fn drop_down(&mut self)
+    {
+        self.current.drop_down();
     }
 }
