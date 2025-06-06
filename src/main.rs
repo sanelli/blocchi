@@ -23,6 +23,7 @@ fn main() {
         .add_systems(Update, update_tetromino_position)
         .add_systems(Update, paint_board_border_outline)
         .add_systems(Update, paint_tetromino_outline)
+        .add_systems(Update, paint_occupied_cells_outline)
         .insert_resource(game::GameBoard::new())
         .insert_resource(GameSettings {
             descend_timer: Timer::new(Duration::from_millis(500), TimerMode::Repeating),
@@ -115,7 +116,11 @@ fn paint_board_border_outline(mut gizmos: Gizmos) {
     }
 }
 
-fn paint_tetromino_outline(mut gizmos: Gizmos, game_board: Res<game::GameBoard>) {
+fn paint_tetromino_outline(mut gizmos: Gizmos, game_board: ResMut<game::GameBoard>) {
+    do_paint_tetromino_outline(&mut gizmos, &game_board);
+}
+
+fn do_paint_tetromino_outline(gizmos: &mut Gizmos, game_board: &ResMut<game::GameBoard>) {
     let tetromino_type = game_board.get_current_tetromino_type();
 
     let color = get_tetromino_outline_color_by_type(&tetromino_type);
@@ -131,11 +136,29 @@ fn paint_tetromino_outline(mut gizmos: Gizmos, game_board: Res<game::GameBoard>)
     }
 }
 
+fn paint_occupied_cells_outline(mut gizmos: Gizmos, game_board: ResMut<game::GameBoard>) {
+    do_paint_occupied_cells_outline(&mut gizmos, &game_board);
+}
+
+fn do_paint_occupied_cells_outline(gizmos: &mut Gizmos, game_board: &ResMut<game::GameBoard>) {
+
+    for cell in 0..(game::NUMBER_OF_ROWS * game::NUMBER_OF_COLUMNS) {
+        if game_board.is_cell_occupied(cell) {
+            let transformation = get_transform_by_board_cell(cell);
+            gizmos.rect_2d(
+                Isometry2d::from_xy(transformation.translation.x, transformation.translation.y),
+                Vec2::splat(SQUARE_SIZE),
+                GRAY,
+            )
+        }
+    }
+}
+
 fn update_tetromino_position(
     mut commands: Commands,
     mut query: Query<(Entity, &mut Transform), With<TetrominoCell>>,
     mut game_board: ResMut<GameBoard>,
-    gizmos: Gizmos,
+    mut gizmos: Gizmos,
     time: Res<Time>,
     mut config: ResMut<GameSettings>,
     mut rng: GlobalEntropy<ChaCha8Rng>,
@@ -151,7 +174,7 @@ fn update_tetromino_position(
         match dropped {
             DroppedStatus::Dropped => {
                 let cells = game_board.get_current_cells();
-                for (index,  (_, ref mut transform)) in query.iter_mut().enumerate() {
+                for (index, (_, ref mut transform)) in query.iter_mut().enumerate() {
                     let updated_transformation = get_transform_by_board_cell(cells[index]);
 
                     transform.translation.x = updated_transformation.translation.x;
@@ -160,18 +183,22 @@ fn update_tetromino_position(
 
                 paint_board_border_outline(gizmos);
             }
-            DroppedStatus::NotDropped => {
+            DroppedStatus::NotDropped(cells) => {
                 for (entity, _) in query {
                     commands.entity(entity).despawn();
                 }
 
-                // TODO : ADD THE FILLED CELLS (FIXED COLOR TO MAKE IT EASY)
-                // TODO : BORDER OF THE NEW FILLED CELLS
-
-                game_board.next_tetromino(&mut rng);
-
                 let shape = meshes.add(Rectangle::new(SQUARE_SIZE, SQUARE_SIZE));
 
+                for cell in cells{
+                    commands.spawn((
+                        Mesh2d(shape.clone()),
+                        MeshMaterial2d(materials.add(DARK_GRAY)),
+                        get_transform_by_board_cell(cell),
+                    ));
+                }
+
+                game_board.next_tetromino(&mut rng);
                 let tetromino_type = game_board.get_current_tetromino_type();
                 let color = get_tetromino_color_by_type(&tetromino_type);
                 let current_cells = game_board.get_current_cells();
@@ -185,7 +212,8 @@ fn update_tetromino_position(
                     ));
                 }
 
-                paint_board_border_outline(gizmos);
+                do_paint_tetromino_outline(&mut gizmos, &game_board);
+                do_paint_occupied_cells_outline(&mut gizmos, &game_board);
             }
         }
 

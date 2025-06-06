@@ -26,7 +26,7 @@ impl GameBoard {
     where R : Rng + ?Sized
     {
         if self.provider.is_none() {
-            self.provider = Some(tetromino::TetrominoProvider::new(rng));     
+            self.provider = Some(tetromino::TetrominoProvider::new(rng));
         }
     }
 
@@ -63,9 +63,27 @@ impl GameBoard {
     {
         if let Some(provider) = &mut self.provider {
             // TODO: IF NOT DROPPED UPDATE THE BOARD WITH THE STATUS OF CURRENT CELLS (SHOULD RETURN THE CELLS AS WELL)
-            provider.drop_down(&self.board)
+            let dropped_status = provider.drop_down(&self.board);
+
+            match dropped_status {
+                DroppedStatus::NotDropped(occupied_cells) =>
+                    {
+                        for cell in occupied_cells
+                        {
+                            self.board[cell as usize] = 1;
+                        }
+                    }
+                _ => { }
+            }
+
+            dropped_status
         } else {
             panic!("Provider has not been initialized.");
         }
+    }
+
+    pub fn is_cell_occupied(&self, cell: u8) -> bool
+    {
+        self.board[cell as usize] == 1
     }
 }

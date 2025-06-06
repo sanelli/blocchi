@@ -42,7 +42,7 @@ pub struct TetrominoProvider {
 pub enum DroppedStatus
 {
     Dropped,
-    NotDropped
+    NotDropped([u8; 4]),
 }
 
 impl TetrominoType {
@@ -210,7 +210,8 @@ impl Tetromino {
     {
         if self.position.row + self.tetromino.height() == game::NUMBER_OF_ROWS
         {
-            return DroppedStatus::NotDropped;
+            let cells = self.get_cells();
+            return DroppedStatus::NotDropped(cells);
         }
 
         let next_row = std::cmp::min(game::NUMBER_OF_ROWS - self.tetromino.height(), self.position.row + 1);
