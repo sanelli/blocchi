@@ -57,6 +57,13 @@ pub enum MoveDirection {
     Left,
 }
 
+#[derive(Debug)]
+pub enum CanSpawnMoreTetromino
+{
+    Yes,
+    No,
+}
+
 impl TetrominoType {
     fn random<R>(rng: &mut R) -> Self
     where
@@ -221,6 +228,13 @@ impl Tetromino {
         row * game::NUMBER_OF_COLUMNS + col
     }
 
+    pub fn get_row_and_column_by_cell(cell: u8) -> (u8, u8) {
+        (
+            cell / game::NUMBER_OF_COLUMNS,
+            cell % game::NUMBER_OF_COLUMNS,
+        )
+    }
+
     fn drop_down(&mut self, board: &[u8; game::NUMBER_OF_CELLS as usize]) -> DroppedStatus {
         if self.position.row + self.tetromino.height() == game::NUMBER_OF_ROWS {
             let cells = self.get_cells();
@@ -303,7 +317,7 @@ impl TetrominoProvider {
         &mut self,
         rng: &mut R,
         board: &[u8; game::NUMBER_OF_CELLS as usize],
-    ) -> Option<()>
+    ) -> CanSpawnMoreTetromino
     where
         R: Rng + ?Sized,
     {
@@ -313,11 +327,11 @@ impl TetrominoProvider {
         let new_current_cells = self.current.get_cells();
         for cell in new_current_cells {
             if board[cell as usize] == 1 {
-                return None;
+                return CanSpawnMoreTetromino::No;
             }
         }
 
-        Some(())
+        CanSpawnMoreTetromino::Yes
     }
 
     pub fn get_current_type(&self) -> &TetrominoType {
