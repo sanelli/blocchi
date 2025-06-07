@@ -74,11 +74,7 @@ fn setup(
             commands.spawn((
                 Mesh2d(shape.clone()),
                 MeshMaterial2d(materials.add(GRAY)),
-                Transform::from_xyz(
-                    SQUARE_SIZE / 2.0 - 6.0 * SQUARE_SIZE + col as f32 * SQUARE_SIZE,
-                    SQUARE_SIZE / 2.0 - 11.0 * SQUARE_SIZE + row as f32 * SQUARE_SIZE,
-                    0.0,
-                ),
+                get_transform_from_row_and_col(row, col),
             ));
         }
     }
@@ -102,6 +98,14 @@ fn setup(
     }
 }
 
+fn get_transform_from_row_and_col(row: u8, col: u8) -> Transform {
+    Transform::from_xyz(
+        SQUARE_SIZE / 2.0 - 6.0 * SQUARE_SIZE + col as f32 * SQUARE_SIZE,
+        SQUARE_SIZE / 2.0 - 11.0 * SQUARE_SIZE + row as f32 * SQUARE_SIZE,
+        0.0,
+    )
+}
+
 fn paint_board_border_outline(mut gizmos: Gizmos) {
     for row in 0..(game::NUMBER_OF_ROWS + 2) {
         for col in 0..(game::NUMBER_OF_COLUMNS + 2) {
@@ -110,12 +114,10 @@ fn paint_board_border_outline(mut gizmos: Gizmos) {
                     continue;
                 }
             }
-
+            
+            let transform = get_transform_from_row_and_col(row, col);
             gizmos.rect_2d(
-                Isometry2d::from_xy(
-                    SQUARE_SIZE / 2.0 - 6.0 * SQUARE_SIZE + col as f32 * SQUARE_SIZE,
-                    SQUARE_SIZE / 2.0 - 11.0 * SQUARE_SIZE + row as f32 * SQUARE_SIZE,
-                ),
+                Isometry2d::from_xy(transform.translation.x, transform.translation.y),
                 Vec2::splat(SQUARE_SIZE),
                 DARK_GRAY,
             )
