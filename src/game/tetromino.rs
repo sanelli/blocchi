@@ -39,8 +39,7 @@ pub struct TetrominoProvider {
     next: Tetromino,
 }
 
-pub enum DroppedStatus
-{
+pub enum DroppedStatus {
     Dropped,
     NotDropped([u8; 4]),
 }
@@ -63,6 +62,7 @@ impl TetrominoType {
         }
     }
 
+    // TODO: HANDLE ROTATION
     fn height(&self) -> u8 {
         match self {
             TetrominoType::I => 4,
@@ -81,7 +81,7 @@ impl Tetromino {
     where
         R: Rng + ?Sized,
     {
-        fn get_starting_column(tetromino_type: &TetrominoType) -> u8{
+        fn get_starting_column(tetromino_type: &TetrominoType) -> u8 {
             match tetromino_type {
                 TetrominoType::I => 4,
                 TetrominoType::O => 4,
@@ -98,15 +98,21 @@ impl Tetromino {
 
         Self {
             tetromino: tetromino_type,
-            position: TetrominoPosition { row: 0, col: starting_column },
+            position: TetrominoPosition {
+                row: 0,
+                col: starting_column,
+            },
             rotation: TetrominoRotation::Zero,
         }
     }
 
-    // TODO: Handle rotation
     fn get_cells(&self) -> [u8; 4] {
-        fn handle_i(tetromino: &Tetromino) -> [u8; 4] {
-            let position = &tetromino.position;
+        self.get_cells_from_position(&self.position)
+    }
+
+    // TODO: Handle rotation
+    fn get_cells_from_position(&self, position: &TetrominoPosition) -> [u8; 4] {
+        fn handle_i(position: &TetrominoPosition) -> [u8; 4] {
             let row = position.row;
             let col = position.col;
             [
@@ -117,8 +123,7 @@ impl Tetromino {
             ]
         }
 
-        fn handle_t(tetromino: &Tetromino) -> [u8; 4] {
-            let position = &tetromino.position;
+        fn handle_t(position: &TetrominoPosition) -> [u8; 4] {
             let row = position.row;
             let col = position.col;
             [
@@ -129,8 +134,7 @@ impl Tetromino {
             ]
         }
 
-        fn handle_j(tetromino: &Tetromino) -> [u8; 4] {
-            let position = &tetromino.position;
+        fn handle_j(position: &TetrominoPosition) -> [u8; 4] {
             let row = position.row;
             let col = position.col;
             [
@@ -141,8 +145,7 @@ impl Tetromino {
             ]
         }
 
-        fn handle_l(tetromino: &Tetromino) -> [u8; 4] {
-            let position = &tetromino.position;
+        fn handle_l(position: &TetrominoPosition) -> [u8; 4] {
             let row = position.row;
             let col = position.col;
             [
@@ -153,8 +156,7 @@ impl Tetromino {
             ]
         }
 
-        fn handle_o(tetromino: &Tetromino) -> [u8; 4] {
-            let position = &tetromino.position;
+        fn handle_o(position: &TetrominoPosition) -> [u8; 4] {
             let row = position.row;
             let col = position.col;
             [
@@ -165,8 +167,7 @@ impl Tetromino {
             ]
         }
 
-        fn handle_s(tetromino: &Tetromino) -> [u8; 4] {
-            let position = &tetromino.position;
+        fn handle_s(position: &TetrominoPosition) -> [u8; 4] {
             let row = position.row;
             let col = position.col;
             [
@@ -177,8 +178,7 @@ impl Tetromino {
             ]
         }
 
-        fn handle_z(tetromino: &Tetromino) -> [u8; 4] {
-            let position = &tetromino.position;
+        fn handle_z(position: &TetrominoPosition) -> [u8; 4] {
             let row = position.row;
             let col = position.col;
             [
@@ -190,13 +190,13 @@ impl Tetromino {
         }
 
         match self.tetromino {
-            TetrominoType::I => handle_i(&self),
-            TetrominoType::O => handle_o(&self),
-            TetrominoType::T => handle_t(&self),
-            TetrominoType::J => handle_j(&self),
-            TetrominoType::L => handle_l(&self),
-            TetrominoType::S => handle_s(&self),
-            TetrominoType::Z => handle_z(&self),
+            TetrominoType::I => handle_i(&position),
+            TetrominoType::O => handle_o(&position),
+            TetrominoType::T => handle_t(&position),
+            TetrominoType::J => handle_j(&position),
+            TetrominoType::L => handle_l(&position),
+            TetrominoType::S => handle_s(&position),
+            TetrominoType::Z => handle_z(&position),
         }
     }
 
@@ -204,19 +204,31 @@ impl Tetromino {
         row * game::NUMBER_OF_COLUMNS + col
     }
 
-    // TODO: HANDLE THE STATUS WHEN THE CELL "BELOW" IS ALREADY FILLED
-    pub fn drop_down(&mut self, board: &[u8; game::NUMBER_OF_ROWS as usize * game::NUMBER_OF_COLUMNS as usize])
-    -> DroppedStatus
-    {
-        if self.position.row + self.tetromino.height() == game::NUMBER_OF_ROWS
-        {
+    pub fn drop_down(
+        &mut self,
+        board: &[u8; game::NUMBER_OF_ROWS as usize * game::NUMBER_OF_COLUMNS as usize],
+    ) -> DroppedStatus {
+        if self.position.row + self.tetromino.height() == game::NUMBER_OF_ROWS {
             let cells = self.get_cells();
             return DroppedStatus::NotDropped(cells);
         }
 
-        let next_row = std::cmp::min(game::NUMBER_OF_ROWS - self.tetromino.height(), self.position.row + 1);
-        self.position.row = next_row;
+        let next_row = std::cmp::min(
+            game::NUMBER_OF_ROWS - self.tetromino.height(),
+            self.position.row + 1,
+        );
 
+        let next_position = TetrominoPosition { row: next_row, col: self.position.col };
+        let targeted_cells = self.get_cells_from_position(&next_position);
+
+        for target_cell in targeted_cells {
+            if board[target_cell as usize] == 1 {
+                let cells = self.get_cells();
+                return DroppedStatus::NotDropped(cells);
+            }
+        }
+
+        self.position.row = next_row;
         DroppedStatus::Dropped
     }
 }
@@ -248,9 +260,10 @@ impl TetrominoProvider {
         self.current.get_cells()
     }
 
-    pub fn drop_down(&mut self, board: &[u8; game::NUMBER_OF_ROWS as usize * game::NUMBER_OF_COLUMNS as usize])
-        -> DroppedStatus
-    {
+    pub fn drop_down(
+        &mut self,
+        board: &[u8; game::NUMBER_OF_ROWS as usize * game::NUMBER_OF_COLUMNS as usize],
+    ) -> DroppedStatus {
         self.current.drop_down(&board)
     }
 }

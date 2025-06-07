@@ -1,7 +1,5 @@
 mod game;
 
-use crate::game::GameBoard;
-use crate::game::tetromino::{DroppedStatus, TetrominoType};
 use bevy::prelude::*;
 use bevy_prng::ChaCha8Rng;
 use bevy_rand::prelude::*;
@@ -26,7 +24,7 @@ fn main() {
         .add_systems(Update, paint_occupied_cells_outline)
         .insert_resource(game::GameBoard::new())
         .insert_resource(GameSettings {
-            descend_timer: Timer::new(Duration::from_millis(500), TimerMode::Repeating),
+            descend_timer: Timer::new(Duration::from_millis(200), TimerMode::Repeating),
         });
     app.run();
 }
@@ -157,7 +155,7 @@ fn do_paint_occupied_cells_outline(gizmos: &mut Gizmos, game_board: &ResMut<game
 fn update_tetromino_position(
     mut commands: Commands,
     mut query: Query<(Entity, &mut Transform), With<TetrominoCell>>,
-    mut game_board: ResMut<GameBoard>,
+    mut game_board: ResMut<game::GameBoard>,
     mut gizmos: Gizmos,
     time: Res<Time>,
     mut config: ResMut<GameSettings>,
@@ -172,7 +170,7 @@ fn update_tetromino_position(
         let dropped = game_board.drop_down();
 
         match dropped {
-            DroppedStatus::Dropped => {
+            game::tetromino::DroppedStatus::Dropped => {
                 let cells = game_board.get_current_cells();
                 for (index, (_, ref mut transform)) in query.iter_mut().enumerate() {
                     let updated_transformation = get_transform_by_board_cell(cells[index]);
@@ -183,7 +181,7 @@ fn update_tetromino_position(
 
                 paint_board_border_outline(gizmos);
             }
-            DroppedStatus::NotDropped(cells) => {
+            game::tetromino::DroppedStatus::NotDropped(cells) => {
                 for (entity, _) in query {
                     commands.entity(entity).despawn();
                 }
@@ -221,27 +219,27 @@ fn update_tetromino_position(
     }
 }
 
-fn get_tetromino_color_by_type(tetromino_type: &TetrominoType) -> &'static Color {
+fn get_tetromino_color_by_type(tetromino_type: &game::tetromino::TetrominoType) -> &'static Color {
     match tetromino_type {
-        TetrominoType::I => &PINK,
-        TetrominoType::O => &GREEN,
-        TetrominoType::T => &YELLOW,
-        TetrominoType::J => &BLUE,
-        TetrominoType::L => &VIOLET,
-        TetrominoType::S => &ORANGE,
-        TetrominoType::Z => &RED,
+        game::tetromino::TetrominoType::I => &PINK,
+        game::tetromino::TetrominoType::O => &GREEN,
+        game::tetromino::TetrominoType::T => &YELLOW,
+        game::tetromino::TetrominoType::J => &BLUE,
+        game::tetromino::TetrominoType::L => &VIOLET,
+        game::tetromino::TetrominoType::S => &ORANGE,
+        game::tetromino::TetrominoType::Z => &RED,
     }
 }
 
-fn get_tetromino_outline_color_by_type(tetromino_type: &TetrominoType) -> &'static Color {
+fn get_tetromino_outline_color_by_type(tetromino_type: &game::tetromino::TetrominoType) -> &'static Color {
     match tetromino_type {
-        TetrominoType::I => &RED,
-        TetrominoType::O => &DARK_GREEN,
-        TetrominoType::T => &ORANGE,
-        TetrominoType::J => &DARK_BLUE,
-        TetrominoType::L => &BLUE,
-        TetrominoType::S => &YELLOW,
-        TetrominoType::Z => &PINK,
+        game::tetromino:: TetrominoType::I => &RED,
+        game::tetromino::TetrominoType::O => &DARK_GREEN,
+        game::tetromino::TetrominoType::T => &ORANGE,
+        game::tetromino::TetrominoType::J => &DARK_BLUE,
+        game::tetromino::TetrominoType::L => &BLUE,
+        game::tetromino::TetrominoType::S => &YELLOW,
+        game::tetromino::TetrominoType::Z => &PINK,
     }
 }
 
