@@ -30,11 +30,11 @@ impl GameBoard {
         }
     }
 
-    pub fn next_tetromino<R>(&mut self,  rng: &mut R)
+    pub fn next_tetromino<R>(&mut self,  rng: &mut R) -> Option<()>
     where R : Rng + ?Sized
     {
         if let Some(provider) = &mut self.provider {
-            provider.next(rng);
+            provider.next(rng, &self.board)
         } else {
             panic!("Provider has not been initialized.");
         }

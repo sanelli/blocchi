@@ -8,6 +8,14 @@ use std::time::Duration;
 #[derive(Component)]
 struct TetrominoCell;
 
+#[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
+enum GameStatus
+{
+    #[default]
+    Running,
+    GameOver,
+}
+
 #[derive(Resource)]
 struct GameSettings {
     descend_timer: Timer,
@@ -18,14 +26,15 @@ fn main() {
     app.add_plugins(DefaultPlugins)
         .add_plugins(EntropyPlugin::<ChaCha8Rng>::default())
         .add_systems(Startup, setup)
-        .add_systems(Update, update_tetromino_position)
+        .add_systems(Update, update_tetromino_position.run_if(in_state(GameStatus::Running)))
         .add_systems(Update, paint_board_border_outline)
-        .add_systems(Update, paint_tetromino_outline)
+        .add_systems(Update, paint_tetromino_outline.run_if(in_state(GameStatus::Running)))
         .add_systems(Update, paint_occupied_cells_outline)
         .insert_resource(game::GameBoard::new())
         .insert_resource(GameSettings {
             descend_timer: Timer::new(Duration::from_millis(200), TimerMode::Repeating),
-        });
+        })
+        .init_state::<GameStatus>();
     app.run();
 }
 
@@ -162,6 +171,7 @@ fn update_tetromino_position(
     mut rng: GlobalEntropy<ChaCha8Rng>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    mut next_state: ResMut<NextState<GameStatus>>,
 ) {
     // tick the timer
     config.descend_timer.tick(time.delta());
@@ -196,7 +206,12 @@ fn update_tetromino_position(
                     ));
                 }
 
-                game_board.next_tetromino(&mut rng);
+                let has_more = game_board.next_tetromino(&mut rng);
+                if has_more.is_none(){
+                    next_state.set(GameStatus::GameOver);
+                    return;
+                }
+
                 let tetromino_type = game_board.get_current_tetromino_type();
                 let color = get_tetromino_color_by_type(&tetromino_type);
                 let current_cells = game_board.get_current_cells();

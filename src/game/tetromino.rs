@@ -244,12 +244,22 @@ impl TetrominoProvider {
         }
     }
 
-    pub fn next<R>(&mut self, rng: &mut R)
+    pub fn next<R>(&mut self, rng: &mut R, board: &[u8; game::NUMBER_OF_ROWS as usize * game::NUMBER_OF_COLUMNS as usize])
+        -> Option<()>
     where
         R: Rng + ?Sized,
     {
         self.current = (&self.next).clone();
         self.next = Tetromino::new(rng);
+        
+        let new_current_cells = self.current.get_cells();
+        for cell in new_current_cells {
+            if board[cell as usize] == 1 {
+                return None;
+            }
+        }
+        
+        Some(())
     }
 
     pub fn get_current_type(&self) -> &TetrominoType {
