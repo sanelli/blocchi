@@ -4,13 +4,13 @@ use bevy::prelude::*;
 use bevy_prng::ChaCha8Rng;
 use bevy_rand::prelude::*;
 use std::time::Duration;
+use crate::game::GameBoard;
 
 #[derive(Component)]
 struct TetrominoCell;
 
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
-enum GameStatus
-{
+enum GameStatus {
     #[default]
     Running,
     GameOver,
@@ -26,10 +26,17 @@ fn main() {
     app.add_plugins(DefaultPlugins)
         .add_plugins(EntropyPlugin::<ChaCha8Rng>::default())
         .add_systems(Startup, setup)
-        .add_systems(Update, update_tetromino_position.run_if(in_state(GameStatus::Running)))
-        .add_systems(Update, paint_board_border_outline)
-        .add_systems(Update, paint_tetromino_outline.run_if(in_state(GameStatus::Running)))
+        .add_systems(
+            Update,
+            (
+                move_and_rotate_tetromino.run_if(in_state(GameStatus::Running)),
+                drop_tetromino_down.run_if(in_state(GameStatus::Running)),
+                paint_tetromino_outline.run_if(in_state(GameStatus::Running)),
+            )
+                .chain(),
+        )
         .add_systems(Update, paint_occupied_cells_outline)
+        .add_systems(Update, paint_board_border_outline)
         .insert_resource(game::GameBoard::new())
         .insert_resource(GameSettings {
             descend_timer: Timer::new(Duration::from_millis(200), TimerMode::Repeating),
@@ -114,7 +121,7 @@ fn paint_board_border_outline(mut gizmos: Gizmos) {
                     continue;
                 }
             }
-            
+
             let transform = get_transform_from_row_and_col(row, col);
             gizmos.rect_2d(
                 Isometry2d::from_xy(transform.translation.x, transform.translation.y),
@@ -150,7 +157,6 @@ fn paint_occupied_cells_outline(mut gizmos: Gizmos, game_board: ResMut<game::Gam
 }
 
 fn do_paint_occupied_cells_outline(gizmos: &mut Gizmos, game_board: &ResMut<game::GameBoard>) {
-
     for cell in 0..(game::NUMBER_OF_ROWS * game::NUMBER_OF_COLUMNS) {
         if game_board.is_cell_occupied(cell) {
             let transformation = get_transform_by_board_cell(cell);
@@ -163,7 +169,32 @@ fn do_paint_occupied_cells_outline(gizmos: &mut Gizmos, game_board: &ResMut<game
     }
 }
 
-fn update_tetromino_position(
+fn move_and_rotate_tetromino(
+    keys: Res<ButtonInput<KeyCode>>,
+    mut game_board: ResMut<game::GameBoard>,
+    mut query: Query<(Entity, &mut Transform), With<TetrominoCell>>,
+    mut gizmos: Gizmos,
+) {
+    let mut require_redraw = false;
+
+    if keys.just_released(KeyCode::ArrowRight) {
+        let moved = game_board.move_tetromino(game::tetromino::MoveDirection::Right);
+        require_redraw = moved == game::tetromino::MoveStatus::Moved;
+    } else if keys.just_released(KeyCode::ArrowLeft) {
+        let moved = game_board.move_tetromino(game::tetromino::MoveDirection::Left);
+        require_redraw = moved == game::tetromino::MoveStatus::Moved;
+    } else if keys.just_released(KeyCode::ArrowDown) {
+        // TODO: Fast drop down
+    } else if keys.just_released(KeyCode::Space) {
+        // TODO: Invoke rotate
+    }
+
+    if require_redraw {
+        do_redraw_tetromino(&game_board, &mut query, &mut gizmos);
+    }
+}
+
+fn drop_tetromino_down(
     mut commands: Commands,
     mut query: Query<(Entity, &mut Transform), With<TetrominoCell>>,
     mut game_board: ResMut<game::GameBoard>,
@@ -183,15 +214,7 @@ fn update_tetromino_position(
 
         match dropped {
             game::tetromino::DroppedStatus::Dropped => {
-                let cells = game_board.get_current_cells();
-                for (index, (_, ref mut transform)) in query.iter_mut().enumerate() {
-                    let updated_transformation = get_transform_by_board_cell(cells[index]);
-
-                    transform.translation.x = updated_transformation.translation.x;
-                    transform.translation.y = updated_transformation.translation.y;
-                }
-
-                paint_board_border_outline(gizmos);
+                do_redraw_tetromino(&game_board, &mut query, &mut gizmos);
             }
             game::tetromino::DroppedStatus::NotDropped(cells) => {
                 for (entity, _) in query {
@@ -200,7 +223,7 @@ fn update_tetromino_position(
 
                 let shape = meshes.add(Rectangle::new(SQUARE_SIZE, SQUARE_SIZE));
 
-                for cell in cells{
+                for cell in cells {
                     commands.spawn((
                         Mesh2d(shape.clone()),
                         MeshMaterial2d(materials.add(DARK_GRAY)),
@@ -209,7 +232,7 @@ fn update_tetromino_position(
                 }
 
                 let has_more = game_board.next_tetromino(&mut rng);
-                if has_more.is_none(){
+                if has_more.is_none() {
                     next_state.set(GameStatus::GameOver);
                     return;
                 }
@@ -236,6 +259,22 @@ fn update_tetromino_position(
     }
 }
 
+fn do_redraw_tetromino(
+    game_board: &ResMut<GameBoard>,
+    query: &mut Query<(Entity, &mut Transform), With<TetrominoCell>>,
+    gizmos: &mut Gizmos)
+{
+    let cells = game_board.get_current_cells();
+    for (index, (_, ref mut transform)) in query.iter_mut().enumerate() {
+        let updated_transformation = get_transform_by_board_cell(cells[index]);
+
+        transform.translation.x = updated_transformation.translation.x;
+        transform.translation.y = updated_transformation.translation.y;
+    }
+
+    do_paint_tetromino_outline(gizmos, game_board);
+}
+
 fn get_tetromino_color_by_type(tetromino_type: &game::tetromino::TetrominoType) -> &'static Color {
     match tetromino_type {
         game::tetromino::TetrominoType::I => &PINK,
@@ -248,9 +287,11 @@ fn get_tetromino_color_by_type(tetromino_type: &game::tetromino::TetrominoType) 
     }
 }
 
-fn get_tetromino_outline_color_by_type(tetromino_type: &game::tetromino::TetrominoType) -> &'static Color {
+fn get_tetromino_outline_color_by_type(
+    tetromino_type: &game::tetromino::TetrominoType,
+) -> &'static Color {
     match tetromino_type {
-        game::tetromino:: TetrominoType::I => &RED,
+        game::tetromino::TetrominoType::I => &RED,
         game::tetromino::TetrominoType::O => &DARK_GREEN,
         game::tetromino::TetrominoType::T => &ORANGE,
         game::tetromino::TetrominoType::J => &DARK_BLUE,

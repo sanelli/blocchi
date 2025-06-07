@@ -39,9 +39,22 @@ pub struct TetrominoProvider {
     next: Tetromino,
 }
 
+#[derive(Debug)]
 pub enum DroppedStatus {
     Dropped,
     NotDropped([u8; 4]),
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum MoveStatus {
+    Moved,
+    NotMoved,
+}
+
+#[derive(Debug)]
+pub enum MoveDirection {
+    Right,
+    Left,
 }
 
 impl TetrominoType {
@@ -111,81 +124,71 @@ impl Tetromino {
     }
 
     // TODO: Handle rotation
-    fn get_cells_from_position(&self, position: &TetrominoPosition) -> [u8; 4] {
-        fn handle_i(position: &TetrominoPosition) -> [u8; 4] {
-            let row = position.row;
-            let col = position.col;
+    fn get_cell_positions_from_position(&self, position: &TetrominoPosition) -> [(i8, i8); 4] {
+        fn handle_i(position: &TetrominoPosition) -> [(i8, i8); 4] {
+            let row = position.row as i8;
+            let col = position.col as i8;
+            [(row, col), (row + 1, col), (row + 2, col), (row + 3, col)]
+        }
+
+        fn handle_t(position: &TetrominoPosition) -> [(i8, i8); 4] {
+            let row = position.row as i8;
+            let col = position.col as i8;
+            [(row, col), (row + 1, col), (row, col - 1), (row, col + 1)]
+        }
+
+        fn handle_j(position: &TetrominoPosition) -> [(i8, i8); 4] {
+            let row = position.row as i8;
+            let col = position.col as i8;
             [
-                Tetromino::get_cell_from_row_and_column(row, col),
-                Tetromino::get_cell_from_row_and_column(row + 1, col),
-                Tetromino::get_cell_from_row_and_column(row + 2, col),
-                Tetromino::get_cell_from_row_and_column(row + 3, col),
+                (row, col),
+                (row + 1, col),
+                (row + 2, col),
+                (row + 2, col - 1),
             ]
         }
 
-        fn handle_t(position: &TetrominoPosition) -> [u8; 4] {
-            let row = position.row;
-            let col = position.col;
+        fn handle_l(position: &TetrominoPosition) -> [(i8, i8); 4] {
+            let row = position.row as i8;
+            let col = position.col as i8;
             [
-                Tetromino::get_cell_from_row_and_column(row, col),
-                Tetromino::get_cell_from_row_and_column(row + 1, col),
-                Tetromino::get_cell_from_row_and_column(row, col - 1),
-                Tetromino::get_cell_from_row_and_column(row, col + 1),
+                (row, col),
+                (row + 1, col),
+                (row + 2, col),
+                (row + 2, col + 1),
             ]
         }
 
-        fn handle_j(position: &TetrominoPosition) -> [u8; 4] {
-            let row = position.row;
-            let col = position.col;
+        fn handle_o(position: &TetrominoPosition) -> [(i8, i8); 4] {
+            let row = position.row as i8;
+            let col = position.col as i8;
             [
-                Tetromino::get_cell_from_row_and_column(row, col),
-                Tetromino::get_cell_from_row_and_column(row + 1, col),
-                Tetromino::get_cell_from_row_and_column(row + 2, col),
-                Tetromino::get_cell_from_row_and_column(row + 2, col - 1),
+                (row, col),
+                (row + 1, col),
+                (row, col + 1),
+                (row + 1, col + 1),
             ]
         }
 
-        fn handle_l(position: &TetrominoPosition) -> [u8; 4] {
-            let row = position.row;
-            let col = position.col;
+        fn handle_s(position: &TetrominoPosition) -> [(i8, i8); 4] {
+            let row = position.row as i8;
+            let col = position.col as i8;
             [
-                Tetromino::get_cell_from_row_and_column(row, col),
-                Tetromino::get_cell_from_row_and_column(row + 1, col),
-                Tetromino::get_cell_from_row_and_column(row + 2, col),
-                Tetromino::get_cell_from_row_and_column(row + 2, col + 1),
+                (row, col),
+                (row + 1, col),
+                (row, col + 1),
+                (row + 1, col - 1),
             ]
         }
 
-        fn handle_o(position: &TetrominoPosition) -> [u8; 4] {
-            let row = position.row;
-            let col = position.col;
+        fn handle_z(position: &TetrominoPosition) -> [(i8, i8); 4] {
+            let row = position.row as i8;
+            let col = position.col as i8;
             [
-                Tetromino::get_cell_from_row_and_column(row, col),
-                Tetromino::get_cell_from_row_and_column(row + 1, col),
-                Tetromino::get_cell_from_row_and_column(row, col + 1),
-                Tetromino::get_cell_from_row_and_column(row + 1, col + 1),
-            ]
-        }
-
-        fn handle_s(position: &TetrominoPosition) -> [u8; 4] {
-            let row = position.row;
-            let col = position.col;
-            [
-                Tetromino::get_cell_from_row_and_column(row, col),
-                Tetromino::get_cell_from_row_and_column(row + 1, col),
-                Tetromino::get_cell_from_row_and_column(row, col + 1),
-                Tetromino::get_cell_from_row_and_column(row + 1, col - 1),
-            ]
-        }
-
-        fn handle_z(position: &TetrominoPosition) -> [u8; 4] {
-            let row = position.row;
-            let col = position.col;
-            [
-                Tetromino::get_cell_from_row_and_column(row, col),
-                Tetromino::get_cell_from_row_and_column(row + 1, col),
-                Tetromino::get_cell_from_row_and_column(row, col - 1),
-                Tetromino::get_cell_from_row_and_column(row + 1, col + 1),
+                (row, col),
+                (row + 1, col),
+                (row, col - 1),
+                (row + 1, col + 1),
             ]
         }
 
@@ -200,14 +203,25 @@ impl Tetromino {
         }
     }
 
+    fn get_cells_from_positions(&self, positions: &[(i8, i8); 4]) -> [u8; 4] {
+        [
+            Tetromino::get_cell_from_row_and_column(positions[0].0 as u8, positions[0].1 as u8),
+            Tetromino::get_cell_from_row_and_column(positions[1].0 as u8, positions[1].1 as u8),
+            Tetromino::get_cell_from_row_and_column(positions[2].0 as u8, positions[2].1 as u8),
+            Tetromino::get_cell_from_row_and_column(positions[3].0 as u8, positions[3].1 as u8),
+        ]
+    }
+
+    fn get_cells_from_position(&self, position: &TetrominoPosition) -> [u8; 4] {
+        let positions = self.get_cell_positions_from_position(position);
+        self.get_cells_from_positions(&positions)
+    }
+
     pub fn get_cell_from_row_and_column(row: u8, col: u8) -> u8 {
         row * game::NUMBER_OF_COLUMNS + col
     }
 
-    pub fn drop_down(
-        &mut self,
-        board: &[u8; game::NUMBER_OF_ROWS as usize * game::NUMBER_OF_COLUMNS as usize],
-    ) -> DroppedStatus {
+    fn drop_down(&mut self, board: &[u8; game::NUMBER_OF_CELLS as usize]) -> DroppedStatus {
         if self.position.row + self.tetromino.height() == game::NUMBER_OF_ROWS {
             let cells = self.get_cells();
             return DroppedStatus::NotDropped(cells);
@@ -218,7 +232,10 @@ impl Tetromino {
             self.position.row + 1,
         );
 
-        let next_position = TetrominoPosition { row: next_row, col: self.position.col };
+        let next_position = TetrominoPosition {
+            row: next_row,
+            col: self.position.col,
+        };
         let targeted_cells = self.get_cells_from_position(&next_position);
 
         for target_cell in targeted_cells {
@@ -230,6 +247,44 @@ impl Tetromino {
 
         self.position.row = next_row;
         DroppedStatus::Dropped
+    }
+
+    fn move_with_direction(
+        &mut self,
+        direction: MoveDirection,
+        board: &[u8; game::NUMBER_OF_CELLS as usize],
+    ) -> MoveStatus {
+        let next_column = match direction {
+            MoveDirection::Left => self.position.col as i8 - 1,
+            MoveDirection::Right => self.position.col as i8 + 1,
+        };
+
+        // Compute the next position
+        let next_position = TetrominoPosition {
+            row: self.position.row,
+            col: next_column as u8,
+        };
+
+        // Check the tetromino rows and columns are within boundaries
+        let cells = self.get_cell_positions_from_position(&next_position);
+        for cell in cells {
+            if cell.1 < 0 || cell.1  >= game::NUMBER_OF_COLUMNS as i8
+            {
+                return MoveStatus::NotMoved;
+            }
+        }
+
+        // Check the tetromino is not crossing any cell already occupied
+        let targeted_cells = self.get_cells_from_positions(&cells);
+        for target_cell in targeted_cells {
+            if board[target_cell as usize] == 1 {
+                return MoveStatus::NotMoved;
+            }
+        }
+
+        // If the above checks are successful, then it means that the tetromino moved!
+        self.position.col = next_column as u8;
+        MoveStatus::Moved
     }
 }
 
@@ -244,21 +299,24 @@ impl TetrominoProvider {
         }
     }
 
-    pub fn next<R>(&mut self, rng: &mut R, board: &[u8; game::NUMBER_OF_ROWS as usize * game::NUMBER_OF_COLUMNS as usize])
-        -> Option<()>
+    pub fn next<R>(
+        &mut self,
+        rng: &mut R,
+        board: &[u8; game::NUMBER_OF_CELLS as usize],
+    ) -> Option<()>
     where
         R: Rng + ?Sized,
     {
         self.current = (&self.next).clone();
         self.next = Tetromino::new(rng);
-        
+
         let new_current_cells = self.current.get_cells();
         for cell in new_current_cells {
             if board[cell as usize] == 1 {
                 return None;
             }
         }
-        
+
         Some(())
     }
 
@@ -270,10 +328,15 @@ impl TetrominoProvider {
         self.current.get_cells()
     }
 
-    pub fn drop_down(
-        &mut self,
-        board: &[u8; game::NUMBER_OF_ROWS as usize * game::NUMBER_OF_COLUMNS as usize],
-    ) -> DroppedStatus {
+    pub fn drop_down(&mut self, board: &[u8; game::NUMBER_OF_CELLS as usize]) -> DroppedStatus {
         self.current.drop_down(&board)
+    }
+
+    pub fn move_current(
+        &mut self,
+        direction: MoveDirection,
+        board: &[u8; game::NUMBER_OF_CELLS as usize],
+    ) -> MoveStatus {
+        self.current.move_with_direction(direction, &board)
     }
 }

@@ -1,4 +1,4 @@
-use crate::game::tetromino::{DroppedStatus, TetrominoType};
+use crate::game::tetromino::{DroppedStatus, MoveDirection, TetrominoType};
 use bevy::prelude::*;
 use rand::Rng;
 
@@ -6,6 +6,8 @@ pub mod tetromino;
 
 pub const NUMBER_OF_ROWS: u8 = 20;
 pub const NUMBER_OF_COLUMNS: u8 = 10;
+
+pub const NUMBER_OF_CELLS : u8 = NUMBER_OF_ROWS * NUMBER_OF_COLUMNS;
 
 #[derive(Debug, Resource)]
 pub struct GameBoard {
@@ -17,7 +19,7 @@ impl GameBoard {
     pub fn new() -> Self
     {
         GameBoard {
-            board: [0; NUMBER_OF_ROWS as usize * NUMBER_OF_COLUMNS as usize],
+            board: [0; NUMBER_OF_CELLS as usize],
             provider: None,
         }
     }
@@ -85,5 +87,14 @@ impl GameBoard {
     pub fn is_cell_occupied(&self, cell: u8) -> bool
     {
         self.board[cell as usize] == 1
+    }
+
+    pub fn move_tetromino(&mut self, direction : MoveDirection) -> tetromino::MoveStatus
+    {
+        if let Some(provider) = &mut self.provider {
+            provider.move_current(direction, &self.board)
+        } else {
+            panic!("Provider has not been initialized.");
+        }
     }
 }
