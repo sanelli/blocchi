@@ -24,10 +24,11 @@ enum GameStatus {
 #[derive(Resource)]
 struct GameSettings {
     descend_timer: Timer,
-    last_despwaned_cell : Option<u8>,
+    last_despawned_cell: Option<u8>,
     remove_filled_cells_times: Timer,
 }
 
+// TODO: UPDATE THE METHOD TO DRAW THE OUTLINE OF TETROMINO AND FILLED UP CELLS TO QUERY THE MESHES INSTEAD OF DRAWING BLINDLY
 fn main() {
     let mut app = App::new();
     app.add_plugins(DefaultPlugins)
@@ -44,7 +45,7 @@ fn main() {
         .insert_resource(game::GameBoard::new())
         .insert_resource(GameSettings {
             descend_timer: Timer::new(Duration::from_millis(200), TimerMode::Repeating),
-            last_despwaned_cell: None,
+            last_despawned_cell: None,
             remove_filled_cells_times: Timer::new(Duration::from_millis(10), TimerMode::Repeating),
         })
         .init_state::<GameStatus>();
@@ -247,7 +248,7 @@ fn drop_tetromino_down(
                     CanSpawnMoreTetromino::Yes => {
                         // If not-dropped we need to check if any line has been filled up so they can be exploded
                         if let Some(_) = game_board.get_next_cell_from_filled_row_after(None) {
-                            game_settings.last_despwaned_cell = None;
+                            game_settings.last_despawned_cell = None;
                             game_settings.remove_filled_cells_times.reset();
                             next_state.set(GameStatus::RemovingFilledRows);
                         } else {
@@ -273,7 +274,7 @@ fn drop_tetromino_down(
 
 fn despawn_filled_up_rows(
     mut commands: Commands,
-    mut query: Query<(Entity, &mut Transform), With<OccupiedCell>>,
+    query: Query<(Entity, &mut Transform), With<OccupiedCell>>,
     mut game_board: ResMut<game::GameBoard>,
     mut next_state: ResMut<NextState<GameStatus>>,
     mut game_settings: ResMut<GameSettings>,
@@ -287,7 +288,7 @@ fn despawn_filled_up_rows(
     game_settings.remove_filled_cells_times.tick(time.delta());
 
     if game_settings.remove_filled_cells_times.just_finished() {
-        match game_board.get_next_cell_from_filled_row_after(game_settings.last_despwaned_cell) {
+        match game_board.get_next_cell_from_filled_row_after(game_settings.last_despawned_cell) {
             None => {
                 // Despawn all the remaining filled cells
                 // TODO:
@@ -309,7 +310,7 @@ fn despawn_filled_up_rows(
                 );
 
                 // Reset the last cell to despawn
-                game_settings.last_despwaned_cell = None;
+                game_settings.last_despawned_cell = None;
 
                 // Reset descent timer
                 game_settings.descend_timer.reset();
@@ -326,7 +327,7 @@ fn despawn_filled_up_rows(
                     }
                 }
 
-                game_settings.last_despwaned_cell = Some(cell_to_despawn);
+                game_settings.last_despawned_cell = Some(cell_to_despawn);
             }
         }
 
