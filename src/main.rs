@@ -1,7 +1,7 @@
 mod game;
 
-use crate::game::{GameBoard, NUMBER_OF_COLUMNS, NUMBER_OF_ROWS};
-use crate::game::tetromino::CanSpawnMoreTetromino;
+//use crate::game::{GameBoard, NUMBER_OF_COLUMNS, NUMBER_OF_ROWS};
+//use crate::game::tetromino::CanSpawnMoreTetromino;
 use bevy::prelude::*;
 use bevy_prng::ChaCha8Rng;
 use bevy_rand::prelude::*;
@@ -28,7 +28,16 @@ struct GameSettings {
     remove_filled_cells_times: Timer,
 }
 
-// TODO: UPDATE THE METHOD TO DRAW THE OUTLINE OF TETROMINO AND FILLED UP CELLS TO QUERY THE MESHES INSTEAD OF DRAWING BLINDLY
+// TODO : 0. Clearing multiple filled rows at once does not work
+// TODO : 1. Rotation by pressing space
+// TODO : 2. Display upcoming tetromino
+// TODO : 3. Display points
+// TODO : 6. Tetromino drop faster depending on points
+// TODO : 4. Fast drop down by pressing ⬇️
+// TODO : 5. Restart game by pressing N
+// TODO : 6. Occupied cells should retain their original color and not be gray
+// TODO : 7. Display Blocchi title on the left upper corner of the screen a asset image
+// TODO : 8. Update the method to outline blocks to use the spawned meshes and not the board
 fn main() {
     let mut app = App::new();
     app.add_plugins(DefaultPlugins)
@@ -254,7 +263,7 @@ fn drop_tetromino_down(
                 // Is game-over?
                 let can_spawn_more_tetromino = game_board.next_tetromino(&mut rng);
                 match can_spawn_more_tetromino {
-                    CanSpawnMoreTetromino::Yes => {
+                    game::tetromino::CanSpawnMoreTetromino::Yes => {
                         // If not-dropped we need to check if any line has been filled up so they can be exploded
                         if let Some(_) = game_board.get_next_cell_from_filled_row_after(None) {
                             game_settings.last_despawned_cell = None;
@@ -264,13 +273,12 @@ fn drop_tetromino_down(
                             do_spawn_tetromino(
                                 &mut commands,
                                 &mut game_board,
-                                &mut gizmos,
                                 materials,
                                 shape,
                             );
                         }
                     }
-                    CanSpawnMoreTetromino::No => {
+                    game::tetromino::CanSpawnMoreTetromino::No => {
                         next_state.set(GameStatus::GameOver);
                     }
                 }
@@ -287,7 +295,6 @@ fn despawn_filled_up_rows(
     mut game_board: ResMut<game::GameBoard>,
     mut next_state: ResMut<NextState<GameStatus>>,
     mut game_settings: ResMut<GameSettings>,
-    mut gizmos: Gizmos,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     time: Res<Time>,
@@ -308,9 +315,9 @@ fn despawn_filled_up_rows(
 
                 // Spawn again all the occupied cells
                 let shape = meshes.add(Rectangle::new(SQUARE_SIZE, SQUARE_SIZE));
-                for row in 0..NUMBER_OF_ROWS
+                for row in 0..game::NUMBER_OF_ROWS
                 {
-                    for col in 0..NUMBER_OF_COLUMNS
+                    for col in 0..game::NUMBER_OF_COLUMNS
                     {
                         let cell = game::tetromino::Tetromino::get_cell_from_row_and_column(row, col);
                         if game_board.is_cell_occupied(cell) {
@@ -324,15 +331,11 @@ fn despawn_filled_up_rows(
                     }
                 }
 
-                // Draw outline for filled cells
-                // TODO: (INVOKE THE EXISTING METHOD) - Do I really need this?
-
                 // Spawn tetromino
                 let shape = meshes.add(Rectangle::new(SQUARE_SIZE, SQUARE_SIZE));
                 do_spawn_tetromino(
                     &mut commands,
                     &mut game_board,
-                    &mut gizmos,
                     materials,
                     shape,
                 );
@@ -366,8 +369,7 @@ fn despawn_filled_up_rows(
 
 fn do_spawn_tetromino(
     commands: &mut Commands,
-    game_board: &mut ResMut<GameBoard>,
-    mut gizmos: &mut Gizmos,
+    game_board: &mut ResMut<game::GameBoard>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     shape: Handle<Mesh>,
 ) {
@@ -384,13 +386,10 @@ fn do_spawn_tetromino(
             get_transform_by_board_cell(tetromino_cell),
         ));
     }
-
-    // TODO: Double check if I really need this?
-    // do_paint_tetromino_outline(&mut gizmos, &game_board);
 }
 
 fn do_redraw_tetromino(
-    game_board: &ResMut<GameBoard>,
+    game_board: &ResMut<game::GameBoard>,
     query: &mut Query<(Entity, &mut Transform), With<TetrominoCell>>,
     gizmos: &mut Gizmos,
 ) {

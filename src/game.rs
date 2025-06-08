@@ -60,7 +60,6 @@ impl GameBoard {
 
     pub fn drop_down(&mut self) -> DroppedStatus {
         if let Some(provider) = &mut self.provider {
-            // TODO: IF NOT DROPPED UPDATE THE BOARD WITH THE STATUS OF CURRENT CELLS (SHOULD RETURN THE CELLS AS WELL)
             let dropped_status = provider.drop_down(&self.board);
 
             match dropped_status {
@@ -110,11 +109,11 @@ impl GameBoard {
         None
     }
 
-    // TODO: This can be simplified, we can just get cell for (row, col: 0) and then add up to NUMBER_OF_COLUMNS
     fn get_row_cells(row: u8) -> [u8; NUMBER_OF_COLUMNS as usize] {
         let mut result: [u8; NUMBER_OF_COLUMNS as usize] = [0; NUMBER_OF_COLUMNS as usize];
-        for col in 0..NUMBER_OF_COLUMNS {
-            result[col as usize] = tetromino::Tetromino::get_cell_from_row_and_column(row, col);
+        result[0] = tetromino::Tetromino::get_cell_from_row_and_column(row, 0);
+        for col in 1..NUMBER_OF_COLUMNS {
+            result[col as usize] = result[0] + col;
         }
         result
     }
