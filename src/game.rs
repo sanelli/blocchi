@@ -79,7 +79,7 @@ impl GameBoard {
     }
 
     pub fn is_cell_occupied(&self, cell: u8) -> bool {
-        self.board[cell as usize] == 1
+        self.board[cell as usize] != 0
     }
 
     pub fn move_tetromino(&mut self, direction: MoveDirection) -> tetromino::MoveStatus {
@@ -127,5 +127,33 @@ impl GameBoard {
         }
 
         true
+    }
+
+    pub fn collapse_filled_rows(&mut self)
+    {
+        for row in (0..NUMBER_OF_ROWS).rev()
+        {
+            if self.is_row_filled(row)
+            {
+                // Just in case the row 0 is filled
+                if row > 0 {
+                    // Drop all the rows, including the one filled
+                    for row_to_drop in (1..=row).rev() {
+                        for col in 0..NUMBER_OF_COLUMNS
+                        {
+                            let target_cell = tetromino::Tetromino::get_cell_from_row_and_column(row_to_drop, col) as usize;
+                            let source_cell = tetromino::Tetromino::get_cell_from_row_and_column(row_to_drop - 1, col) as usize;
+                            self.board[target_cell] = self.board[source_cell];
+                        }
+                    }
+                }
+
+                // Empty the first row
+                for col in 0..NUMBER_OF_COLUMNS
+                {
+                    self.board[col as usize] = 0;
+                }
+            }
+        }
     }
 }

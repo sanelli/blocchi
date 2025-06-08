@@ -1,6 +1,6 @@
 mod game;
 
-use crate::game::GameBoard;
+use crate::game::{GameBoard, NUMBER_OF_COLUMNS, NUMBER_OF_ROWS};
 use crate::game::tetromino::CanSpawnMoreTetromino;
 use bevy::prelude::*;
 use bevy_prng::ChaCha8Rng;
@@ -36,10 +36,18 @@ fn main() {
         .add_systems(Startup, setup)
         .add_systems(
             Update,
-            (move_and_rotate_tetromino, drop_tetromino_down, paint_tetromino_outline)
+            (
+                move_and_rotate_tetromino,
+                drop_tetromino_down,
+                paint_tetromino_outline,
+            )
                 .chain()
-                .run_if(in_state(GameStatus::Running)))
-        .add_systems(Update, despawn_filled_up_rows.run_if(in_state(GameStatus::RemovingFilledRows)))
+                .run_if(in_state(GameStatus::Running)),
+        )
+        .add_systems(
+            Update,
+            despawn_filled_up_rows.run_if(in_state(GameStatus::RemovingFilledRows)),
+        )
         .add_systems(Update, paint_occupied_cells_outline)
         .add_systems(Update, paint_board_border_outline)
         .insert_resource(game::GameBoard::new())
@@ -163,6 +171,7 @@ fn paint_occupied_cells_outline(mut gizmos: Gizmos, game_board: ResMut<game::Gam
     do_paint_occupied_cells_outline(&mut gizmos, &game_board);
 }
 
+// TODO: We should not paint cells that have been despawned because row is filled up
 fn do_paint_occupied_cells_outline(gizmos: &mut Gizmos, game_board: &ResMut<game::GameBoard>) {
     for cell in 0..(game::NUMBER_OF_ROWS * game::NUMBER_OF_COLUMNS) {
         if game_board.is_cell_occupied(cell) {
@@ -280,26 +289,45 @@ fn despawn_filled_up_rows(
     mut game_settings: ResMut<GameSettings>,
     mut gizmos: Gizmos,
     mut meshes: ResMut<Assets<Mesh>>,
-    materials: ResMut<Assets<ColorMaterial>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
     time: Res<Time>,
-)
-{
+) {
     // tick the timer
     game_settings.remove_filled_cells_times.tick(time.delta());
 
     if game_settings.remove_filled_cells_times.just_finished() {
         match game_board.get_next_cell_from_filled_row_after(game_settings.last_despawned_cell) {
             None => {
-                // Despawn all the remaining filled cells
-                // TODO:
+                // Collapse filled up cells
+                game_board.collapse_filled_rows();
 
-                // Spwan again all the occupied cells
-                // TODO:
+                // Despawn all the remaining filled cells
+                for (entity, _) in query {
+                    commands.entity(entity).despawn();
+                }
+
+                // Spawn again all the occupied cells
+                let shape = meshes.add(Rectangle::new(SQUARE_SIZE, SQUARE_SIZE));
+                for row in 0..NUMBER_OF_ROWS
+                {
+                    for col in 0..NUMBER_OF_COLUMNS
+                    {
+                        let cell = game::tetromino::Tetromino::get_cell_from_row_and_column(row, col);
+                        if game_board.is_cell_occupied(cell) {
+                            commands.spawn((
+                                OccupiedCell,
+                                Mesh2d(shape.clone()),
+                                MeshMaterial2d(materials.add(DARK_GRAY)),
+                                get_transform_by_board_cell(cell),
+                            ));
+                        }
+                    }
+                }
 
                 // Draw outline for filled cells
-                // TODO: (INVOKE THE EXISTING METHOD)
+                // TODO: (INVOKE THE EXISTING METHOD) - Do I really need this?
 
-                // Spwan tetromino
+                // Spawn tetromino
                 let shape = meshes.add(Rectangle::new(SQUARE_SIZE, SQUARE_SIZE));
                 do_spawn_tetromino(
                     &mut commands,
@@ -319,7 +347,8 @@ fn despawn_filled_up_rows(
                 next_state.set(GameStatus::Running);
             }
             Some(cell_to_despawn) => {
-                let transformation_of_the_cell_to_despawn = get_transform_by_board_cell(cell_to_despawn);
+                let transformation_of_the_cell_to_despawn =
+                    get_transform_by_board_cell(cell_to_despawn);
                 for (entity, transformation) in query {
                     if transformation.eq(&transformation_of_the_cell_to_despawn) {
                         commands.entity(entity).despawn();
@@ -356,7 +385,8 @@ fn do_spawn_tetromino(
         ));
     }
 
-    do_paint_tetromino_outline(&mut gizmos, &game_board);
+    // TODO: Double check if I really need this?
+    // do_paint_tetromino_outline(&mut gizmos, &game_board);
 }
 
 fn do_redraw_tetromino(

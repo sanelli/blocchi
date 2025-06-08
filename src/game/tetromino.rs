@@ -253,7 +253,7 @@ impl Tetromino {
         let targeted_cells = self.get_cells_from_position(&next_position);
 
         for target_cell in targeted_cells {
-            if board[target_cell as usize] == 1 {
+            if board[target_cell as usize] != 0 {
                 let cells = self.get_cells();
                 return DroppedStatus::NotDropped(cells);
             }
@@ -291,7 +291,7 @@ impl Tetromino {
         // Check the tetromino is not crossing any cell already occupied
         let targeted_cells = self.get_cells_from_positions(&cells);
         for target_cell in targeted_cells {
-            if board[target_cell as usize] == 1 {
+            if board[target_cell as usize] != 0 {
                 return MoveStatus::NotMoved;
             }
         }
@@ -326,7 +326,7 @@ impl TetrominoProvider {
 
         let new_current_cells = self.current.get_cells();
         for cell in new_current_cells {
-            if board[cell as usize] == 1 {
+            if board[cell as usize] != 0 {
                 return CanSpawnMoreTetromino::No;
             }
         }
