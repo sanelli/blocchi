@@ -38,6 +38,7 @@ struct GameSettings {
 // TODO : 6. Occupied cells should retain their original color and not be gray
 // TODO : 7. Display Blocchi title on the left upper corner of the screen a asset image
 // TODO : 8. Update the method to outline blocks to use the spawned meshes and not the board
+// TODO : 9. Clean code by replacing u8 for cells with usize and by replacing (i8,i8) and (u8,u8) in the code to improve meaning
 fn main() {
     let mut app = App::new();
     app.add_plugins(DefaultPlugins)
