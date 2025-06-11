@@ -161,4 +161,12 @@ impl GameBoard {
             }
         }
     }
+
+    pub fn rotate_tetromino(&mut self) -> tetromino::MoveStatus {
+        if let Some(provider) = &mut self.provider {
+            provider.rotate_current(&self.board)
+        } else {
+            panic!("Provider has not been initialized.");
+        }
+    }
 }

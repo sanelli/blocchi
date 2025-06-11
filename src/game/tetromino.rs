@@ -2,7 +2,7 @@ use crate::game;
 use rand::Rng;
 use std::fmt::{Display, Formatter};
 
-#[derive(Clone, Debug,)]
+#[derive(Clone, Debug)]
 pub enum TetrominoType {
     I,
     O,
@@ -20,8 +20,6 @@ pub enum TetrominoRotation {
     Pi,          // 180 degrees
     ThreeHalfPi, // 270 degrees
 }
-
-
 
 #[derive(Clone, Debug)]
 pub struct TetrominoPosition {
@@ -61,8 +59,7 @@ pub enum MoveDirection {
 }
 
 #[derive(Debug)]
-pub enum CanSpawnMoreTetromino
-{
+pub enum CanSpawnMoreTetromino {
     Yes,
     No,
 }
@@ -72,7 +69,7 @@ impl TetrominoType {
     where
         R: Rng + ?Sized,
     {
-        return TetrominoType::I;
+        return TetrominoType::I; // TODO : REMOVE ONCE TESTS HAVE BEEN COMPLETED
 
         let random_value = rng.random_range(1..=7);
         match random_value {
@@ -87,15 +84,37 @@ impl TetrominoType {
         }
     }
 
-    fn height(&self, rotation: &TetrominoRotation) -> u8 {
-        match self {
+    fn next_rotation(&self, rotation: &TetrominoRotation) -> TetrominoRotation
+    {
+        match self
+        {
             TetrominoType::I => {
                 match rotation {
-                    TetrominoRotation::Zero => 4,
-                    TetrominoRotation::HalfPi => 1,
-                    TetrominoRotation::Pi => panic!("Type {0} does not support rotation {1} should never happen!", &self, rotation),
-                    TetrominoRotation::ThreeHalfPi => panic!("Type {0} does not support rotation {1} should never happen!", &self, rotation)
-                }
+                    TetrominoRotation::Zero => TetrominoRotation::HalfPi,
+                    TetrominoRotation::HalfPi => TetrominoRotation::Zero,
+                    _ => panic!(
+                        "Type '{0}' does not support rotation '{1}'!",
+                        &self, rotation
+                    ),}
+            }
+            TetrominoType::O => todo!(),
+            TetrominoType::T => todo!(),
+            TetrominoType::J => todo!(),
+            TetrominoType::L => todo!(),
+            TetrominoType::S => todo!(),
+            TetrominoType::Z => todo!(),
+        }
+    }
+
+    fn height(&self, rotation: &TetrominoRotation) -> u8 {
+        match self {
+            TetrominoType::I => match rotation {
+                TetrominoRotation::Zero => 4,
+                TetrominoRotation::HalfPi => 1,
+                _ => panic!(
+                    "Type '{0}' does not support rotation '{1}'!",
+                    &self, rotation
+                ),
             },
             TetrominoType::O => todo!(), // 2,
             TetrominoType::T => todo!(), // 2,
@@ -138,86 +157,107 @@ impl Tetromino {
     }
 
     fn get_cells(&self) -> [u8; 4] {
-        self.get_cells_from_position(&self.position)
+        self.get_cells_from_position(&self.position, &self.rotation)
     }
 
-    // TODO: Handle rotation
-    fn get_cell_positions_from_position(&self, position: &TetrominoPosition) -> [(i8, i8); 4] {
-        fn handle_i(position: &TetrominoPosition) -> [(i8, i8); 4] {
+    fn get_cell_positions_from_position(
+        &self,
+        position: &TetrominoPosition,
+        rotation: &TetrominoRotation,
+    ) -> [(i8, i8); 4] {
+        fn handle_i(position: &TetrominoPosition, rotation: &TetrominoRotation) -> [(i8, i8); 4] {
             let row = position.row as i8;
             let col = position.col as i8;
-            [(row, col), (row + 1, col), (row + 2, col), (row + 3, col)]
+            match rotation {
+                TetrominoRotation::Zero => {
+                    [(row, col), (row + 1, col), (row + 2, col), (row + 3, col)]
+                }
+                TetrominoRotation::HalfPi => {
+                    [(row, col), (row, col + 1), (row, col + 2), (row, col + 3)]
+                }
+                _ => panic!(
+                    "Type '{0}' does not support rotation '{1}'!",
+                    TetrominoType::I,
+                    rotation
+                ),
+            }
         }
 
-        fn handle_t(position: &TetrominoPosition) -> [(i8, i8); 4] {
-            let row = position.row as i8;
-            let col = position.col as i8;
-            [(row, col), (row + 1, col), (row, col - 1), (row, col + 1)]
+        fn handle_t(position: &TetrominoPosition, rotation: &TetrominoRotation) -> [(i8, i8); 4] {
+            todo!("Handle rotation")
+            // let row = position.row as i8;
+            // let col = position.col as i8;
+            // [(row, col), (row + 1, col), (row, col - 1), (row, col + 1)]
         }
 
-        fn handle_j(position: &TetrominoPosition) -> [(i8, i8); 4] {
-            let row = position.row as i8;
-            let col = position.col as i8;
-            [
-                (row, col),
-                (row + 1, col),
-                (row + 2, col),
-                (row + 2, col - 1),
-            ]
+        fn handle_j(position: &TetrominoPosition, rotation: &TetrominoRotation) -> [(i8, i8); 4] {
+            todo!("Handle rotation")
+            // let row = position.row as i8;
+            // let col = position.col as i8;
+            // [
+            //     (row, col),
+            //     (row + 1, col),
+            //     (row + 2, col),
+            //     (row + 2, col - 1),
+            // ]
         }
 
-        fn handle_l(position: &TetrominoPosition) -> [(i8, i8); 4] {
-            let row = position.row as i8;
-            let col = position.col as i8;
-            [
-                (row, col),
-                (row + 1, col),
-                (row + 2, col),
-                (row + 2, col + 1),
-            ]
+        fn handle_l(position: &TetrominoPosition, rotation: &TetrominoRotation) -> [(i8, i8); 4] {
+            todo!("Handle rotation")
+            // let row = position.row as i8;
+            // let col = position.col as i8;
+            // [
+            //     (row, col),
+            //     (row + 1, col),
+            //     (row + 2, col),
+            //     (row + 2, col + 1),
+            // ]
         }
 
-        fn handle_o(position: &TetrominoPosition) -> [(i8, i8); 4] {
-            let row = position.row as i8;
-            let col = position.col as i8;
-            [
-                (row, col),
-                (row + 1, col),
-                (row, col + 1),
-                (row + 1, col + 1),
-            ]
+        fn handle_o(position: &TetrominoPosition, rotation: &TetrominoRotation) -> [(i8, i8); 4] {
+            todo!("Handle rotation")
+            // let row = position.row as i8;
+            // let col = position.col as i8;
+            // [
+            //     (row, col),
+            //     (row + 1, col),
+            //     (row, col + 1),
+            //     (row + 1, col + 1),
+            // ]
         }
 
-        fn handle_s(position: &TetrominoPosition) -> [(i8, i8); 4] {
-            let row = position.row as i8;
-            let col = position.col as i8;
-            [
-                (row, col),
-                (row + 1, col),
-                (row, col + 1),
-                (row + 1, col - 1),
-            ]
+        fn handle_s(position: &TetrominoPosition, rotation: &TetrominoRotation) -> [(i8, i8); 4] {
+            todo!("Handle rotation")
+            // let row = position.row as i8;
+            // let col = position.col as i8;
+            // [
+            //     (row, col),
+            //     (row + 1, col),
+            //     (row, col + 1),
+            //     (row + 1, col - 1),
+            // ]
         }
 
-        fn handle_z(position: &TetrominoPosition) -> [(i8, i8); 4] {
-            let row = position.row as i8;
-            let col = position.col as i8;
-            [
-                (row, col),
-                (row + 1, col),
-                (row, col - 1),
-                (row + 1, col + 1),
-            ]
+        fn handle_z(position: &TetrominoPosition, rotation: &TetrominoRotation) -> [(i8, i8); 4] {
+            todo!("Handle rotation")
+            // let row = position.row as i8;
+            // let col = position.col as i8;
+            // [
+            //     (row, col),
+            //     (row + 1, col),
+            //     (row, col - 1),
+            //     (row + 1, col + 1),
+            // ]
         }
 
         match self.tetromino {
-            TetrominoType::I => handle_i(&position),
-            TetrominoType::O => handle_o(&position),
-            TetrominoType::T => handle_t(&position),
-            TetrominoType::J => handle_j(&position),
-            TetrominoType::L => handle_l(&position),
-            TetrominoType::S => handle_s(&position),
-            TetrominoType::Z => handle_z(&position),
+            TetrominoType::I => handle_i(&position, &rotation),
+            TetrominoType::O => handle_o(&position, &rotation),
+            TetrominoType::T => handle_t(&position, &rotation),
+            TetrominoType::J => handle_j(&position, &rotation),
+            TetrominoType::L => handle_l(&position, &rotation),
+            TetrominoType::S => handle_s(&position, &rotation),
+            TetrominoType::Z => handle_z(&position, &rotation),
         }
     }
 
@@ -230,8 +270,12 @@ impl Tetromino {
         ]
     }
 
-    fn get_cells_from_position(&self, position: &TetrominoPosition) -> [u8; 4] {
-        let positions = self.get_cell_positions_from_position(position);
+    fn get_cells_from_position(
+        &self,
+        position: &TetrominoPosition,
+        rotation: &TetrominoRotation,
+    ) -> [u8; 4] {
+        let positions = self.get_cell_positions_from_position(position, rotation);
         self.get_cells_from_positions(&positions)
     }
 
@@ -261,7 +305,7 @@ impl Tetromino {
             row: next_row,
             col: self.position.col,
         };
-        let targeted_cells = self.get_cells_from_position(&next_position);
+        let targeted_cells = self.get_cells_from_position(&next_position, &self.rotation);
 
         for target_cell in targeted_cells {
             if board[target_cell as usize] != 0 {
@@ -290,11 +334,43 @@ impl Tetromino {
             col: next_column as u8,
         };
 
+        let moved = self.check_position_and_rotation_are_sound(&next_position, &self.rotation, &board);
+
+        // If the above checks are successful, then it means that the tetromino moved!
+        if let MoveStatus::Moved = moved {
+            self.position.col = next_column as u8;
+        }
+
+        moved
+    }
+
+    fn rotate(&mut self, board: &[u8; game::NUMBER_OF_CELLS as usize]) -> MoveStatus {
+        // Get the next potential rotation
+        let next_rotation = self.tetromino.next_rotation(&self.rotation);
+        let moved = self.check_position_and_rotation_are_sound(&self.position, &next_rotation, &board);
+
+        // If the above checks are successful, then it means that the tetromino moved!
+        if let MoveStatus::Moved = moved {
+            self.rotation = next_rotation;
+        }
+
+        moved
+    }
+
+    fn check_position_and_rotation_are_sound(
+        &self,
+        next_position: &TetrominoPosition,
+        next_rotation: &TetrominoRotation,
+        board: &[u8;  game::NUMBER_OF_CELLS as usize],)
+        -> MoveStatus {
+
         // Check the tetromino rows and columns are within boundaries
-        let cells = self.get_cell_positions_from_position(&next_position);
+        let cells = self.get_cell_positions_from_position(&next_position, &next_rotation);
         for cell in cells {
-            if cell.1 < 0 || cell.1  >= game::NUMBER_OF_COLUMNS as i8
-            {
+            let col = cell.1;
+            let row = cell.0;
+            if row < 0 || row >= game::NUMBER_OF_ROWS as i8 ||
+                col < 0 || col >= game::NUMBER_OF_COLUMNS as i8 {
                 return MoveStatus::NotMoved;
             }
         }
@@ -307,8 +383,6 @@ impl Tetromino {
             }
         }
 
-        // If the above checks are successful, then it means that the tetromino moved!
-        self.position.col = next_column as u8;
         MoveStatus::Moved
     }
 }
@@ -364,10 +438,13 @@ impl TetrominoProvider {
     ) -> MoveStatus {
         self.current.move_with_direction(direction, &board)
     }
+
+    pub fn rotate_current(&mut self, board: &[u8; game::NUMBER_OF_CELLS as usize]) -> MoveStatus {
+        self.current.rotate(&board)
+    }
 }
 
-impl Display for TetrominoType
-{
+impl Display for TetrominoType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match *self {
             TetrominoType::I => write!(f, "I"),
@@ -381,14 +458,13 @@ impl Display for TetrominoType
     }
 }
 
-impl Display for TetrominoRotation
-{
+impl Display for TetrominoRotation {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match *self {
             TetrominoRotation::Zero => write!(f, "0°"),
             TetrominoRotation::HalfPi => write!(f, "90°"),
             TetrominoRotation::Pi => write!(f, "180°"),
-            TetrominoRotation::ThreeHalfPi =>  write!(f, "270°"),
+            TetrominoRotation::ThreeHalfPi => write!(f, "270°"),
         }
     }
 }

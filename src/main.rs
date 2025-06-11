@@ -201,21 +201,22 @@ fn move_and_rotate_tetromino(
     mut query: Query<(Entity, &mut Transform), With<TetrominoCell>>,
     mut gizmos: Gizmos,
 ) {
-    let mut require_redraw = false;
+    let moved;
 
     if keys.just_released(KeyCode::ArrowRight) {
-        let moved = game_board.move_tetromino(game::tetromino::MoveDirection::Right);
-        require_redraw = moved == game::tetromino::MoveStatus::Moved;
+        moved = game_board.move_tetromino(game::tetromino::MoveDirection::Right);
     } else if keys.just_released(KeyCode::ArrowLeft) {
-        let moved = game_board.move_tetromino(game::tetromino::MoveDirection::Left);
-        require_redraw = moved == game::tetromino::MoveStatus::Moved;
+        moved = game_board.move_tetromino(game::tetromino::MoveDirection::Left);
     } else if keys.just_released(KeyCode::ArrowDown) {
         // TODO: Fast drop down
-    } else if keys.just_released(KeyCode::Space) {
-        // TODO: Invoke rotate
+        moved = game::tetromino::MoveStatus::NotMoved;
+    } else if keys.just_released(KeyCode::ArrowUp) {
+        moved =  game_board.rotate_tetromino();
+    } else {
+        moved = game::tetromino::MoveStatus::NotMoved;
     }
 
-    if require_redraw {
+    if let game::tetromino::MoveStatus::Moved = moved {
         do_redraw_tetromino(&game_board, &mut query, &mut gizmos);
     }
 }
