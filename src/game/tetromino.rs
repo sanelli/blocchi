@@ -69,7 +69,7 @@ impl TetrominoType {
     where
         R: Rng + ?Sized,
     {
-        return TetrominoType::I; // TODO : REMOVE ONCE TESTS HAVE BEEN COMPLETED
+        return TetrominoType::O; // TODO : REMOVE ONCE TESTS HAVE BEEN COMPLETED
 
         let random_value = rng.random_range(1..=7);
         match random_value {
@@ -84,20 +84,23 @@ impl TetrominoType {
         }
     }
 
-    fn next_rotation(&self, rotation: &TetrominoRotation) -> TetrominoRotation
-    {
-        match self
-        {
-            TetrominoType::I => {
-                match rotation {
-                    TetrominoRotation::Zero => TetrominoRotation::HalfPi,
-                    TetrominoRotation::HalfPi => TetrominoRotation::Zero,
-                    _ => panic!(
-                        "Type '{0}' does not support rotation '{1}'!",
-                        &self, rotation
-                    ),}
-            }
-            TetrominoType::O => todo!(),
+    fn next_rotation(&self, rotation: &TetrominoRotation) -> TetrominoRotation {
+        match self {
+            TetrominoType::I => match rotation {
+                TetrominoRotation::Zero => TetrominoRotation::HalfPi,
+                TetrominoRotation::HalfPi => TetrominoRotation::Zero,
+                _ => panic!(
+                    "Type '{0}' does not support rotation '{1}'!",
+                    &self, rotation
+                ),
+            },
+            TetrominoType::O => match rotation {
+                TetrominoRotation::Zero => TetrominoRotation::Zero,
+                _ => panic!(
+                    "Type '{0}' does not support rotation '{1}'!",
+                    &self, rotation
+                ),
+            },
             TetrominoType::T => todo!(),
             TetrominoType::J => todo!(),
             TetrominoType::L => todo!(),
@@ -116,7 +119,7 @@ impl TetrominoType {
                     &self, rotation
                 ),
             },
-            TetrominoType::O => todo!(), // 2,
+            TetrominoType::O => 2,
             TetrominoType::T => todo!(), // 2,
             TetrominoType::J => todo!(), // 3,
             TetrominoType::L => todo!(), // 3,
@@ -214,16 +217,15 @@ impl Tetromino {
             // ]
         }
 
-        fn handle_o(position: &TetrominoPosition, rotation: &TetrominoRotation) -> [(i8, i8); 4] {
-            todo!("Handle rotation")
-            // let row = position.row as i8;
-            // let col = position.col as i8;
-            // [
-            //     (row, col),
-            //     (row + 1, col),
-            //     (row, col + 1),
-            //     (row + 1, col + 1),
-            // ]
+        fn handle_o(position: &TetrominoPosition) -> [(i8, i8); 4] {
+            let row = position.row as i8;
+            let col = position.col as i8;
+            [
+                (row, col),
+                (row + 1, col),
+                (row, col + 1),
+                (row + 1, col + 1),
+            ]
         }
 
         fn handle_s(position: &TetrominoPosition, rotation: &TetrominoRotation) -> [(i8, i8); 4] {
@@ -252,7 +254,7 @@ impl Tetromino {
 
         match self.tetromino {
             TetrominoType::I => handle_i(&position, &rotation),
-            TetrominoType::O => handle_o(&position, &rotation),
+            TetrominoType::O => handle_o(&position),
             TetrominoType::T => handle_t(&position, &rotation),
             TetrominoType::J => handle_j(&position, &rotation),
             TetrominoType::L => handle_l(&position, &rotation),
@@ -334,7 +336,8 @@ impl Tetromino {
             col: next_column as u8,
         };
 
-        let moved = self.check_position_and_rotation_are_sound(&next_position, &self.rotation, &board);
+        let moved =
+            self.check_position_and_rotation_are_sound(&next_position, &self.rotation, &board);
 
         // If the above checks are successful, then it means that the tetromino moved!
         if let MoveStatus::Moved = moved {
@@ -347,7 +350,8 @@ impl Tetromino {
     fn rotate(&mut self, board: &[u8; game::NUMBER_OF_CELLS as usize]) -> MoveStatus {
         // Get the next potential rotation
         let next_rotation = self.tetromino.next_rotation(&self.rotation);
-        let moved = self.check_position_and_rotation_are_sound(&self.position, &next_rotation, &board);
+        let moved =
+            self.check_position_and_rotation_are_sound(&self.position, &next_rotation, &board);
 
         // If the above checks are successful, then it means that the tetromino moved!
         if let MoveStatus::Moved = moved {
@@ -361,16 +365,18 @@ impl Tetromino {
         &self,
         next_position: &TetrominoPosition,
         next_rotation: &TetrominoRotation,
-        board: &[u8;  game::NUMBER_OF_CELLS as usize],)
-        -> MoveStatus {
-
+        board: &[u8; game::NUMBER_OF_CELLS as usize],
+    ) -> MoveStatus {
         // Check the tetromino rows and columns are within boundaries
         let cells = self.get_cell_positions_from_position(&next_position, &next_rotation);
         for cell in cells {
             let col = cell.1;
             let row = cell.0;
-            if row < 0 || row >= game::NUMBER_OF_ROWS as i8 ||
-                col < 0 || col >= game::NUMBER_OF_COLUMNS as i8 {
+            if row < 0
+                || row >= game::NUMBER_OF_ROWS as i8
+                || col < 0
+                || col >= game::NUMBER_OF_COLUMNS as i8
+            {
                 return MoveStatus::NotMoved;
             }
         }
