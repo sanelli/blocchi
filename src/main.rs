@@ -1,11 +1,24 @@
 mod game;
 
-//use crate::game::{GameBoard, NUMBER_OF_COLUMNS, NUMBER_OF_ROWS};
-//use crate::game::tetromino::CanSpawnMoreTetromino;
 use bevy::prelude::*;
 use bevy_prng::ChaCha8Rng;
 use bevy_rand::prelude::*;
 use std::time::Duration;
+
+const CLEAN_UP_OCCUPIED_ROWS_TIME_DELTA_MS : u64 = 5;
+const SQUARE_SIZE: f32 = 30.0;
+const ORANGE: Color = Color::linear_rgb(1.0, 0.647, 0.0);
+const RED: Color = Color::linear_rgb(1.0, 0.0, 0.0);
+const BLUE: Color = Color::linear_rgb(0.0, 0.0, 1.0);
+const DARK_BLUE: Color = Color::linear_rgb(0.0, 0.0, 0.392);
+const GREEN: Color = Color::linear_rgb(0.0, 1.0, 0.0);
+const DARK_GREEN: Color = Color::linear_rgb(0.0, 0.392, 0.0);
+const VIOLET: Color = Color::linear_rgb(0.498, 1.0, 1.0);
+const GRAY: Color = Color::linear_rgb(0.7, 0.7, 0.7);
+const PINK: Color = Color::linear_rgb(1.0, 0.753, 0.796);
+const YELLOW: Color = Color::linear_rgb(1.0, 1.00, 0.00);
+const DARK_GRAY: Color = Color::linear_rgb(0.3, 0.3, 0.3);
+
 
 #[derive(Component)]
 struct TetrominoCell;
@@ -28,8 +41,7 @@ struct GameSettings {
     remove_filled_cells_times: Timer,
 }
 
-// TODO : 0. Clearing multiple filled rows at once does not work
-// TODO : 1. Rotation by pressing space
+// TODO : 🚧 1. Rotation by pressing ⬆️
 // TODO : 2. Display upcoming tetromino
 // TODO : 3. Display points
 // TODO : 6. Tetromino drop faster depending on points
@@ -39,6 +51,7 @@ struct GameSettings {
 // TODO : 7. Display Blocchi title on the left upper corner of the screen a asset image
 // TODO : 8. Update the method to outline blocks to use the spawned meshes and not the board
 // TODO : 9. Clean code by replacing u8 for cells with usize and by replacing (i8,i8) and (u8,u8) in the code to improve meaning
+// TODO : 10. Support game pause when pressing "Space Bar"
 fn main() {
     let mut app = App::new();
     app.add_plugins(DefaultPlugins)
@@ -64,24 +77,11 @@ fn main() {
         .insert_resource(GameSettings {
             descend_timer: Timer::new(Duration::from_millis(200), TimerMode::Repeating),
             last_despawned_cell: None,
-            remove_filled_cells_times: Timer::new(Duration::from_millis(10), TimerMode::Repeating),
+            remove_filled_cells_times: Timer::new(Duration::from_millis(CLEAN_UP_OCCUPIED_ROWS_TIME_DELTA_MS), TimerMode::Repeating),
         })
         .init_state::<GameStatus>();
     app.run();
 }
-
-const SQUARE_SIZE: f32 = 30.0;
-const ORANGE: Color = Color::linear_rgb(1.0, 0.647, 0.0);
-const RED: Color = Color::linear_rgb(1.0, 0.0, 0.0);
-const BLUE: Color = Color::linear_rgb(0.0, 0.0, 1.0);
-const DARK_BLUE: Color = Color::linear_rgb(0.0, 0.0, 0.392);
-const GREEN: Color = Color::linear_rgb(0.0, 1.0, 0.0);
-const DARK_GREEN: Color = Color::linear_rgb(0.0, 0.392, 0.0);
-const VIOLET: Color = Color::linear_rgb(0.498, 1.0, 1.0);
-const GRAY: Color = Color::linear_rgb(0.7, 0.7, 0.7);
-const PINK: Color = Color::linear_rgb(1.0, 0.753, 0.796);
-const YELLOW: Color = Color::linear_rgb(1.0, 1.00, 0.00);
-const DARK_GRAY: Color = Color::linear_rgb(0.3, 0.3, 0.3);
 
 fn setup(
     mut commands: Commands,

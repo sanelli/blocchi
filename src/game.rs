@@ -90,18 +90,23 @@ impl GameBoard {
     }
 
     pub fn get_next_cell_from_filled_row_after(&self, cell: Option<u8>) -> Option<u8> {
-        let (max_row, max_col) = match cell {
-            Some(cell) => tetromino::Tetromino::get_row_and_column_by_cell(cell),
-            None => (NUMBER_OF_ROWS - 1, 0),
+        let (max_row, mut max_col, mut increment) = match cell {
+            Some(cell) => {
+                let (r, c) = tetromino::Tetromino::get_row_and_column_by_cell(cell);
+                (r, c, true)
+            }
+            None => (NUMBER_OF_ROWS - 1, 0, false),
         };
 
         for row in (0..=max_row).rev() {
             if self.is_row_filled(row) {
                 if max_col < (NUMBER_OF_COLUMNS - 1) {
-                    return Some(tetromino::Tetromino::get_cell_from_row_and_column(
-                        row,
-                        max_col + 1,
-                    ));
+                    let col =max_col + (if increment { 1 } else { 0 });
+                    return Some(tetromino::Tetromino::get_cell_from_row_and_column(row, col));
+                } else {
+                    // Being at the end of the col I move to be at the beginning again
+                    max_col = 0;
+                    increment = false;
                 }
             }
         }
@@ -128,28 +133,29 @@ impl GameBoard {
         true
     }
 
-    pub fn collapse_filled_rows(&mut self)
-    {
-        for row in (0..NUMBER_OF_ROWS).rev()
-        {
-            if self.is_row_filled(row)
-            {
+    pub fn collapse_filled_rows(&mut self) {
+        for row in (0..NUMBER_OF_ROWS).rev() {
+            while self.is_row_filled(row) {
                 // Just in case the row 0 is filled
                 if row > 0 {
                     // Drop all the rows, including the one filled
                     for row_to_drop in (1..=row).rev() {
-                        for col in 0..NUMBER_OF_COLUMNS
-                        {
-                            let target_cell = tetromino::Tetromino::get_cell_from_row_and_column(row_to_drop, col) as usize;
-                            let source_cell = tetromino::Tetromino::get_cell_from_row_and_column(row_to_drop - 1, col) as usize;
+                        for col in 0..NUMBER_OF_COLUMNS {
+                            let target_cell = tetromino::Tetromino::get_cell_from_row_and_column(
+                                row_to_drop,
+                                col,
+                            ) as usize;
+                            let source_cell = tetromino::Tetromino::get_cell_from_row_and_column(
+                                row_to_drop - 1,
+                                col,
+                            ) as usize;
                             self.board[target_cell] = self.board[source_cell];
                         }
                     }
                 }
 
                 // Empty the first row
-                for col in 0..NUMBER_OF_COLUMNS
-                {
+                for col in 0..NUMBER_OF_COLUMNS {
                     self.board[col as usize] = 0;
                 }
             }

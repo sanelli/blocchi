@@ -1,7 +1,8 @@
 use crate::game;
 use rand::Rng;
+use std::fmt::{Display, Formatter};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug,)]
 pub enum TetrominoType {
     I,
     O,
@@ -19,6 +20,8 @@ pub enum TetrominoRotation {
     Pi,          // 180 degrees
     ThreeHalfPi, // 270 degrees
 }
+
+
 
 #[derive(Clone, Debug)]
 pub struct TetrominoPosition {
@@ -69,6 +72,8 @@ impl TetrominoType {
     where
         R: Rng + ?Sized,
     {
+        return TetrominoType::I;
+
         let random_value = rng.random_range(1..=7);
         match random_value {
             1 => TetrominoType::I,
@@ -82,16 +87,22 @@ impl TetrominoType {
         }
     }
 
-    // TODO: HANDLE ROTATION
-    fn height(&self) -> u8 {
+    fn height(&self, rotation: &TetrominoRotation) -> u8 {
         match self {
-            TetrominoType::I => 4,
-            TetrominoType::O => 2,
-            TetrominoType::T => 2,
-            TetrominoType::J => 3,
-            TetrominoType::L => 3,
-            TetrominoType::S => 2,
-            TetrominoType::Z => 2,
+            TetrominoType::I => {
+                match rotation {
+                    TetrominoRotation::Zero => 4,
+                    TetrominoRotation::HalfPi => 1,
+                    TetrominoRotation::Pi => panic!("Type {0} does not support rotation {1} should never happen!", &self, rotation),
+                    TetrominoRotation::ThreeHalfPi => panic!("Type {0} does not support rotation {1} should never happen!", &self, rotation)
+                }
+            },
+            TetrominoType::O => todo!(), // 2,
+            TetrominoType::T => todo!(), // 2,
+            TetrominoType::J => todo!(), // 3,
+            TetrominoType::L => todo!(), // 3,
+            TetrominoType::S => todo!(), // 2,
+            TetrominoType::Z => todo!(), // 2,
         }
     }
 }
@@ -236,13 +247,13 @@ impl Tetromino {
     }
 
     fn drop_down(&mut self, board: &[u8; game::NUMBER_OF_CELLS as usize]) -> DroppedStatus {
-        if self.position.row + self.tetromino.height() == game::NUMBER_OF_ROWS {
+        if self.position.row + self.tetromino.height(&self.rotation) == game::NUMBER_OF_ROWS {
             let cells = self.get_cells();
             return DroppedStatus::NotDropped(cells);
         }
 
         let next_row = std::cmp::min(
-            game::NUMBER_OF_ROWS - self.tetromino.height(),
+            game::NUMBER_OF_ROWS - self.tetromino.height(&self.rotation),
             self.position.row + 1,
         );
 
@@ -352,5 +363,32 @@ impl TetrominoProvider {
         board: &[u8; game::NUMBER_OF_CELLS as usize],
     ) -> MoveStatus {
         self.current.move_with_direction(direction, &board)
+    }
+}
+
+impl Display for TetrominoType
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            TetrominoType::I => write!(f, "I"),
+            TetrominoType::O => write!(f, "O"),
+            TetrominoType::T => write!(f, "T"),
+            TetrominoType::J => write!(f, "J"),
+            TetrominoType::L => write!(f, "L"),
+            TetrominoType::S => write!(f, "S"),
+            TetrominoType::Z => write!(f, "Z"),
+        }
+    }
+}
+
+impl Display for TetrominoRotation
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            TetrominoRotation::Zero => write!(f, "0°"),
+            TetrominoRotation::HalfPi => write!(f, "90°"),
+            TetrominoRotation::Pi => write!(f, "180°"),
+            TetrominoRotation::ThreeHalfPi =>  write!(f, "270°"),
+        }
     }
 }
