@@ -44,7 +44,6 @@ struct GameSettings {
     remove_filled_cells_times: Timer,
 }
 
-// TODO : 001. Rotation by pressing ⬆️ (🚧)
 // TODO : 002. Display points and level (every 10 lines cleared level increases, 10 points for tetromino placed, 100 per line cleared)
 // TODO : 003. Tetromino drop faster depending on level
 // TODO : 004. Display upcoming tetromino
