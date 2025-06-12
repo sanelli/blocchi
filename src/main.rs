@@ -41,17 +41,17 @@ struct GameSettings {
     remove_filled_cells_times: Timer,
 }
 
-// TODO : 🚧 1. Rotation by pressing ⬆️
-// TODO : 2. Display upcoming tetromino
-// TODO : 3. Display points
-// TODO : 6. Tetromino drop faster depending on points
-// TODO : 4. Fast drop down by pressing ⬇️
-// TODO : 5. Restart game by pressing N
-// TODO : 6. Occupied cells should retain their original color and not be gray
-// TODO : 7. Display Blocchi title on the left upper corner of the screen a asset image
-// TODO : 8. Update the method to outline blocks to use the spawned meshes and not the board
-// TODO : 9. Clean code by replacing u8 for cells with usize and by replacing (i8,i8) and (u8,u8) in the code to improve meaning
-// TODO : 10. Support game pause when pressing "Space Bar"
+// TODO : 001. Rotation by pressing ⬆️ (🚧)
+// TODO : 002. Display points and level (every 10 lines cleared level increases, 10 points for tetromino placed, 100 per line cleared)
+// TODO : 003. Tetromino drop faster depending on level
+// TODO : 004. Display upcoming tetromino
+// TODO : 005. Fast drop down by pressing ⬇️
+// TODO : 008. Display Blocchi title on the left upper corner of the screen a asset image
+// TODO : 009. Update the method to outline blocks to use the spawned meshes and not the board
+// TODO : 010. Clean code by replacing u8 for cells with usize and by replacing (i8,i8) and (u8,u8) in the code to improve meaning
+// TODO : 011. Support game pause when pressing "Space Bar"
+// TODO : 012. Sound and background music
+// TODO : 013. In pause show menu to restart game, exit, enable/disable sound effects, enable.disable bg music
 fn main() {
     let mut app = App::new();
     app.add_plugins(DefaultPlugins)
