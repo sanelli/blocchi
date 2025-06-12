@@ -1,17 +1,16 @@
-mod game;
 mod consts;
 mod ecs;
+mod game;
 
 use bevy::prelude::*;
+use bevy::sprite::Anchor;
 use bevy_prng::ChaCha8Rng;
 use bevy_rand::prelude::*;
-use std::time::Duration;
-use bevy::sprite::Anchor;
 use consts::*;
 use ecs::*;
+use std::time::Duration;
 
 // TODO : 004. Display upcoming tetromino
-// TODO : 005. Fast drop down by pressing ⬇️
 // TODO : 008. Display Blocchi title on the left upper corner of the screen a asset image
 // TODO : 010. Clean code by replacing u8 for cells with usize and by replacing (i8,i8) and (u8,u8) in the code to improve meaning
 // TODO : 011. Support game pause when pressing "Space Bar"
@@ -43,7 +42,10 @@ fn main() {
         .insert_resource(GameSettings {
             descend_timer: Timer::new(Duration::from_millis(BASE_SPEED_MS), TimerMode::Repeating),
             last_despawned_cell: None,
-            remove_filled_cells_times: Timer::new(Duration::from_millis(CLEAN_UP_OCCUPIED_ROWS_TIME_DELTA_MS), TimerMode::Repeating),
+            remove_filled_cells_times: Timer::new(
+                Duration::from_millis(CLEAN_UP_OCCUPIED_ROWS_TIME_DELTA_MS),
+                TimerMode::Repeating,
+            ),
             level: 1,
             filled_up_lines: 0,
             score: 0,
@@ -103,8 +105,8 @@ fn setup(
 fn setup_text_and_scores(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    game_settings: Res<GameSettings>)
-{
+    game_settings: Res<GameSettings>,
+) {
     let font = asset_server.load("fonts/NovaSquare-Regular.ttf");
     let text_font = TextFont {
         font: font.clone(),
@@ -112,10 +114,10 @@ fn setup_text_and_scores(
         ..default()
     };
 
-    const TEXT_TOP : f32 = 325.00;
-    const FIXED_TEXT_X : f32 = 200.00;
-    const VARIABLE_TEXT_X : f32 = 300.00;
-    const LINE_SIZE : f32 = 30.00;
+    const TEXT_TOP: f32 = 325.00;
+    const FIXED_TEXT_X: f32 = 200.00;
+    const VARIABLE_TEXT_X: f32 = 300.00;
+    const LINE_SIZE: f32 = 30.00;
 
     commands.spawn((
         Text2d::new("Scores"),
@@ -206,10 +208,8 @@ fn get_transform_from_row_and_col(row: u8, col: u8) -> Transform {
     )
 }
 
-fn paint_board_border_outline(
-    query : Query<&Transform, With<BorderCell>>,
-    mut gizmos: Gizmos) {
-    for  transform in query {
+fn paint_board_border_outline(query: Query<&Transform, With<BorderCell>>, mut gizmos: Gizmos) {
+    for transform in query {
         gizmos.rect_2d(
             Isometry2d::from_xy(transform.translation.x, transform.translation.y),
             Vec2::splat(SQUARE_SIZE),
@@ -221,13 +221,12 @@ fn paint_board_border_outline(
 fn paint_tetromino_outline(
     query: Query<&mut Transform, With<TetrominoCell>>,
     game_board: Res<game::GameBoard>,
-    mut gizmos: Gizmos)
-{
+    mut gizmos: Gizmos,
+) {
     let tetromino_type = game_board.get_current_tetromino_type();
     let color = get_tetromino_outline_color_by_type(&tetromino_type);
 
-    for transform in query
-    {
+    for transform in query {
         gizmos.rect_2d(
             Isometry2d::from_xy(transform.translation.x, transform.translation.y),
             Vec2::splat(SQUARE_SIZE),
@@ -236,10 +235,7 @@ fn paint_tetromino_outline(
     }
 }
 
-fn paint_occupied_cells_outline(
-    query : Query<&Transform, With<OccupiedCell>>,
-    mut gizmos: Gizmos) {
-
+fn paint_occupied_cells_outline(query: Query<&Transform, With<OccupiedCell>>, mut gizmos: Gizmos) {
     for transform in query {
         gizmos.rect_2d(
             Isometry2d::from_xy(transform.translation.x, transform.translation.y),
@@ -260,11 +256,8 @@ fn move_and_rotate_tetromino(
         moved = game_board.move_tetromino(game::tetromino::MoveDirection::Right);
     } else if keys.just_released(KeyCode::ArrowLeft) {
         moved = game_board.move_tetromino(game::tetromino::MoveDirection::Left);
-    } else if keys.just_released(KeyCode::ArrowDown) {
-        // TODO: Fast drop down
-        moved = game::tetromino::MoveStatus::NotMoved;
     } else if keys.just_released(KeyCode::ArrowUp) {
-        moved =  game_board.rotate_tetromino();
+        moved = game_board.rotate_tetromino();
     } else {
         moved = game::tetromino::MoveStatus::NotMoved;
     }
@@ -277,10 +270,21 @@ fn move_and_rotate_tetromino(
 fn drop_tetromino_down(
     mut commands: Commands,
     mut query: Query<(Entity, &mut Transform), With<TetrominoCell>>,
-    mut score_text:  Single<&mut Text2d, With<ScoreText>>,
-    mut level_text:  Single<&mut Text2d, (With<LevelText>, Without<ScoreText>)>,
-    mut cleared_text:  Single<&mut Text2d, (With<ClearedText>, Without<LevelText>, Without<ScoreText>)>,
-    mut drop_down_ms_text:  Single<&mut Text2d, (With<DropDownMsText>, Without<LevelText>, Without<ScoreText>, Without<ClearedText>)>,
+    mut score_text: Single<&mut Text2d, With<ScoreText>>,
+    mut level_text: Single<&mut Text2d, (With<LevelText>, Without<ScoreText>)>,
+    mut cleared_text: Single<
+        &mut Text2d,
+        (With<ClearedText>, Without<LevelText>, Without<ScoreText>),
+    >,
+    mut drop_down_ms_text: Single<
+        &mut Text2d,
+        (
+            With<DropDownMsText>,
+            Without<LevelText>,
+            Without<ScoreText>,
+            Without<ClearedText>,
+        ),
+    >,
     mut game_board: ResMut<game::GameBoard>,
     time: Res<Time>,
     mut game_settings: ResMut<GameSettings>,
@@ -288,11 +292,15 @@ fn drop_tetromino_down(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut next_state: ResMut<NextState<GameStatus>>,
+    keys: Res<ButtonInput<KeyCode>>,
 ) {
     // tick the timer
     game_settings.descend_timer.tick(time.delta());
 
-    if game_settings.descend_timer.just_finished() {
+    let down_key_pressed = keys.pressed(KeyCode::ArrowDown);
+    let timer_just_finished = game_settings.descend_timer.just_finished();
+
+    if timer_just_finished || down_key_pressed {
         let dropped = game_board.drop_down();
 
         match dropped {
@@ -300,7 +308,6 @@ fn drop_tetromino_down(
                 update_tetromino_position_of_cells(&game_board, &mut query);
             }
             game::tetromino::DroppedStatus::NotDropped(cells) => {
-
                 game_settings.score += POINTS_FOR_TETROMINO_DROPPED;
 
                 // Despawn the current tetromino
@@ -329,18 +336,18 @@ fn drop_tetromino_down(
                             game_settings.last_despawned_cell = None;
                             game_settings.remove_filled_cells_times.reset();
 
-                            game_settings.score += number_of_filled_rows as u32 * POINTS_FOR_CLEARED_ROW;
+                            game_settings.score +=
+                                number_of_filled_rows as u32 * POINTS_FOR_CLEARED_ROW;
                             game_settings.filled_up_lines += number_of_filled_rows as u32;
-                            game_settings.level = std::cmp::min(MAX_LEVEL, game_settings.filled_up_lines as u16 / CLEARED_UP_LINES_PER_LEVEL + 1);
+                            game_settings.level = std::cmp::min(
+                                MAX_LEVEL,
+                                game_settings.filled_up_lines as u16 / CLEARED_UP_LINES_PER_LEVEL
+                                    + 1,
+                            );
 
                             next_state.set(GameStatus::RemovingFilledRows);
                         } else {
-                            do_spawn_tetromino(
-                                &mut commands,
-                                &mut game_board,
-                                materials,
-                                shape,
-                            );
+                            do_spawn_tetromino(&mut commands, &mut game_board, materials, shape);
                         }
                     }
                     game::tetromino::CanSpawnMoreTetromino::No => {
@@ -355,7 +362,8 @@ fn drop_tetromino_down(
                 }
 
                 let drop_down_ms = BASE_SPEED_MS - expected_speed_delta;
-                game_settings.descend_timer = Timer::new(Duration::from_millis(drop_down_ms), TimerMode::Repeating);
+                game_settings.descend_timer =
+                    Timer::new(Duration::from_millis(drop_down_ms), TimerMode::Repeating);
 
                 // Update the text messages
                 score_text.0 = game_settings.score.to_string();
@@ -365,7 +373,9 @@ fn drop_tetromino_down(
             }
         }
 
-        game_settings.descend_timer.reset();
+        if !timer_just_finished {
+            game_settings.descend_timer.reset();
+        }
     }
 }
 
@@ -395,11 +405,10 @@ fn despawn_filled_up_rows(
 
                 // Spawn again all the occupied cells
                 let shape = meshes.add(Rectangle::new(SQUARE_SIZE, SQUARE_SIZE));
-                for row in 0..game::NUMBER_OF_ROWS
-                {
-                    for col in 0..game::NUMBER_OF_COLUMNS
-                    {
-                        let cell = game::tetromino::Tetromino::get_cell_from_row_and_column(row, col);
+                for row in 0..game::NUMBER_OF_ROWS {
+                    for col in 0..game::NUMBER_OF_COLUMNS {
+                        let cell =
+                            game::tetromino::Tetromino::get_cell_from_row_and_column(row, col);
                         if game_board.is_cell_occupied(cell) {
                             commands.spawn((
                                 OccupiedCell,
@@ -413,12 +422,7 @@ fn despawn_filled_up_rows(
 
                 // Spawn tetromino
                 let shape = meshes.add(Rectangle::new(SQUARE_SIZE, SQUARE_SIZE));
-                do_spawn_tetromino(
-                    &mut commands,
-                    &mut game_board,
-                    materials,
-                    shape,
-                );
+                do_spawn_tetromino(&mut commands, &mut game_board, materials, shape);
 
                 // Reset the last cell to despawn
                 game_settings.last_despawned_cell = None;
