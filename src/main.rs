@@ -157,20 +157,18 @@ fn paint_board_border_outline(mut gizmos: Gizmos) {
     }
 }
 
-fn paint_tetromino_outline(mut gizmos: Gizmos, game_board: ResMut<game::GameBoard>) {
-    do_paint_tetromino_outline(&mut gizmos, &game_board);
-}
-
-fn do_paint_tetromino_outline(gizmos: &mut Gizmos, game_board: &ResMut<game::GameBoard>) {
+fn paint_tetromino_outline(
+    query: Query<&mut Transform, With<TetrominoCell>>,
+    game_board: Res<game::GameBoard>,
+    mut gizmos: Gizmos)
+{
     let tetromino_type = game_board.get_current_tetromino_type();
-
     let color = get_tetromino_outline_color_by_type(&tetromino_type);
-    let current_cells = game_board.get_current_cells();
 
-    for tetromino_cell in current_cells {
-        let transformation = get_transform_by_board_cell(tetromino_cell);
+    for transform in query
+    {
         gizmos.rect_2d(
-            Isometry2d::from_xy(transformation.translation.x, transformation.translation.y),
+            Isometry2d::from_xy(transform.translation.x, transform.translation.y),
             Vec2::splat(SQUARE_SIZE),
             *color,
         )
@@ -402,8 +400,6 @@ fn do_redraw_tetromino(
         transform.translation.x = updated_transformation.translation.x;
         transform.translation.y = updated_transformation.translation.y;
     }
-
-    do_paint_tetromino_outline(gizmos, game_board);
 }
 
 fn get_tetromino_color_by_type(tetromino_type: &game::tetromino::TetrominoType) -> &'static Color {
