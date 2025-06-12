@@ -10,7 +10,6 @@ use consts::*;
 use ecs::*;
 use std::time::Duration;
 
-// TODO : 004. Display upcoming tetromino
 // TODO : 008. Display Blocchi title on the left upper corner of the screen a asset image
 // TODO : 010. Clean code by replacing u8 for cells with usize and by replacing (i8,i8) and (u8,u8) in the code to improve meaning
 // TODO : 011. Support game pause when pressing "Space Bar"
@@ -38,6 +37,7 @@ fn main() {
         )
         .add_systems(Update, paint_occupied_cells_outline)
         .add_systems(Update, paint_board_border_outline)
+        .add_systems(Update, paint_upcoming_tetromino_outline.run_if(in_state(GameStatus::Running)))
         .insert_resource(game::GameBoard::new())
         .insert_resource(GameSettings {
             descend_timer: Timer::new(Duration::from_millis(BASE_SPEED_MS), TimerMode::Repeating),
@@ -90,7 +90,7 @@ fn setup(
 
     let tetromino_type = game_board.get_current_tetromino_type();
     let color = get_tetromino_color_by_type(&tetromino_type);
-    let current_cells = game_board.get_current_cells();
+    let current_cells = game_board.get_current_tetromino_cells();
 
     for tetromino_cell in current_cells {
         commands.spawn((
@@ -98,6 +98,20 @@ fn setup(
             Mesh2d(shape.clone()),
             MeshMaterial2d(materials.add(*color)),
             get_transform_by_board_cell(tetromino_cell),
+        ));
+    }
+
+    // Display upcoming tetromino
+    let upcoming_type = game_board.get_upcoming_tetromino_type();
+    let upcoming_cells = game_board.get_upcoming_tetromino_cells();
+    let upcoming_color = get_tetromino_color_by_type(&upcoming_type);
+
+    for upcoming_tetromino_cell in upcoming_cells {
+        commands.spawn((
+            UpcomingTetrominoCell,
+            Mesh2d(shape.clone()),
+            MeshMaterial2d(materials.add(*upcoming_color)),
+            get_upcoming_tetromino_position_for_cell(upcoming_tetromino_cell),
         ));
     }
 }
@@ -235,6 +249,23 @@ fn paint_tetromino_outline(
     }
 }
 
+fn paint_upcoming_tetromino_outline(
+    query: Query<&mut Transform, With<UpcomingTetrominoCell>>,
+    game_board: Res<game::GameBoard>,
+    mut gizmos: Gizmos,
+) {
+    let tetromino_type = game_board.get_upcoming_tetromino_type();
+    let color = get_tetromino_outline_color_by_type(&tetromino_type);
+
+    for transform in query {
+        gizmos.rect_2d(
+            Isometry2d::from_xy(transform.translation.x, transform.translation.y),
+            Vec2::splat(SQUARE_SIZE),
+            *color,
+        )
+    }
+}
+
 fn paint_occupied_cells_outline(query: Query<&Transform, With<OccupiedCell>>, mut gizmos: Gizmos) {
     for transform in query {
         gizmos.rect_2d(
@@ -270,6 +301,7 @@ fn move_and_rotate_tetromino(
 fn drop_tetromino_down(
     mut commands: Commands,
     mut query: Query<(Entity, &mut Transform), With<TetrominoCell>>,
+    upcoming: Query<Entity, (With<UpcomingTetrominoCell>, Without<TetrominoCell>)>,
     mut score_text: Single<&mut Text2d, With<ScoreText>>,
     mut level_text: Single<&mut Text2d, (With<LevelText>, Without<ScoreText>)>,
     mut cleared_text: Single<
@@ -330,6 +362,25 @@ fn drop_tetromino_down(
                 let can_spawn_more_tetromino = game_board.next_tetromino(&mut rng);
                 match can_spawn_more_tetromino {
                     game::tetromino::CanSpawnMoreTetromino::Yes => {
+
+                        // Display upcoming tetromino
+                        let upcoming_type = game_board.get_upcoming_tetromino_type();
+                        let upcoming_cells = game_board.get_upcoming_tetromino_cells();
+                        let upcoming_color = get_tetromino_color_by_type(&upcoming_type);
+
+                        for entity in upcoming {
+                            commands.entity(entity).despawn();
+                        }
+
+                        for upcoming_tetromino_cell in upcoming_cells {
+                            commands.spawn((
+                                UpcomingTetrominoCell,
+                                Mesh2d(shape.clone()),
+                                MeshMaterial2d(materials.add(*upcoming_color)),
+                                get_upcoming_tetromino_position_for_cell(upcoming_tetromino_cell),
+                            ));
+                        }
+
                         // If not-dropped we need to check if any line has been filled up so they can be exploded
                         let number_of_filled_rows = game_board.get_number_of_filled_rows();
                         if number_of_filled_rows > 0 {
@@ -347,11 +398,14 @@ fn drop_tetromino_down(
 
                             next_state.set(GameStatus::RemovingFilledRows);
                         } else {
-                            do_spawn_tetromino(&mut commands, &mut game_board, materials, shape);
+                            do_spawn_tetromino(&mut commands, &mut game_board, materials, shape.clone());
                         }
                     }
                     game::tetromino::CanSpawnMoreTetromino::No => {
                         next_state.set(GameStatus::GameOver);
+                        for entity in upcoming {
+                            commands.entity(entity).despawn();
+                        }
                     }
                 }
 
@@ -460,7 +514,7 @@ fn do_spawn_tetromino(
     // Span the new tetromino
     let tetromino_type = game_board.get_current_tetromino_type();
     let color = get_tetromino_color_by_type(&tetromino_type);
-    let current_cells = game_board.get_current_cells();
+    let current_cells = game_board.get_current_tetromino_cells();
 
     for tetromino_cell in current_cells {
         commands.spawn((
@@ -476,7 +530,7 @@ fn update_tetromino_position_of_cells(
     game_board: &ResMut<game::GameBoard>,
     query: &mut Query<(Entity, &mut Transform), With<TetrominoCell>>,
 ) {
-    let cells = game_board.get_current_cells();
+    let cells = game_board.get_current_tetromino_cells();
     for (index, (_, ref mut transform)) in query.iter_mut().enumerate() {
         let updated_transformation = get_transform_by_board_cell(cells[index]);
 
@@ -516,6 +570,15 @@ fn get_transform_by_board_cell(cell: u8) -> Transform {
     Transform::from_xyz(
         SQUARE_SIZE / 2.0 - 6.0 * SQUARE_SIZE + (col + 1) as f32 * SQUARE_SIZE,
         SQUARE_SIZE / 2.0 - 11.0 * SQUARE_SIZE + (game::NUMBER_OF_ROWS - row) as f32 * SQUARE_SIZE,
+        0.0,
+    )
+}
+
+fn get_upcoming_tetromino_position_for_cell(cell: u8) -> Transform {
+    let (row, col) = game::tetromino::Tetromino::get_row_and_column_by_cell(cell);
+    Transform::from_xyz(
+        280.00 + SQUARE_SIZE / 2.0 - 6.0 * SQUARE_SIZE + (col + 1) as f32 * SQUARE_SIZE,
+        SQUARE_SIZE / 2.0 - 11.0 * SQUARE_SIZE + (game::NUMBER_OF_ROWS - row) as f32 * SQUARE_SIZE - 150.00,
         0.0,
     )
 }

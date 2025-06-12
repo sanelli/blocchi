@@ -44,15 +44,31 @@ impl GameBoard {
 
     pub fn get_current_tetromino_type(&self) -> &TetrominoType {
         if let Some(provider) = &self.provider {
-            provider.get_current_type()
+            provider.get_current_tetromino_type()
         } else {
             panic!("Provider has not been initialized.");
         }
     }
 
-    pub fn get_current_cells(&self) -> [u8; 4] {
+    pub fn get_upcoming_tetromino_type(&self) -> &TetrominoType {
         if let Some(provider) = &self.provider {
-            provider.get_current_cells()
+            provider.get_upcoming_tetromino_type()
+        } else {
+            panic!("Provider has not been initialized.");
+        }
+    }
+
+    pub fn get_current_tetromino_cells(&self) -> [u8; 4] {
+        if let Some(provider) = &self.provider {
+            provider.get_current_tetromino_cells()
+        } else {
+            panic!("Provider has not been initialized.");
+        }
+    }
+
+    pub fn get_upcoming_tetromino_cells(&self) -> [u8; 4] {
+        if let Some(provider) = &self.provider {
+            provider.get_upcoming_tetromino_cells()
         } else {
             panic!("Provider has not been initialized.");
         }

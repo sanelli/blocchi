@@ -4,6 +4,9 @@ use bevy::prelude::{Component, Resource, States, Timer};
 pub struct TetrominoCell;
 
 #[derive(Component)]
+pub struct UpcomingTetrominoCell;
+
+#[derive(Component)]
 pub struct OccupiedCell;
 
 #[derive(Component)]

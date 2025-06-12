@@ -560,12 +560,20 @@ impl TetrominoProvider {
         CanSpawnMoreTetromino::Yes
     }
 
-    pub fn get_current_type(&self) -> &TetrominoType {
+    pub fn get_current_tetromino_type(&self) -> &TetrominoType {
         &self.current.tetromino
     }
 
-    pub fn get_current_cells(&self) -> [u8; 4] {
+    pub fn get_upcoming_tetromino_type(&self) -> &TetrominoType {
+        &self.next.tetromino
+    }
+
+    pub fn get_current_tetromino_cells(&self) -> [u8; 4] {
         self.current.get_cells()
+    }
+
+    pub fn get_upcoming_tetromino_cells(&self) -> [u8; 4] {
+        self.next.get_cells()
     }
 
     pub fn drop_down(&mut self, board: &[u8; game::NUMBER_OF_CELLS as usize]) -> DroppedStatus {
