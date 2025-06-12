@@ -10,8 +10,6 @@ use bevy::sprite::Anchor;
 use consts::*;
 use ecs::*;
 
-// TODO : 002. Display points and level (every 10 lines cleared level increases, 10 points for tetromino placed, 100 per line cleared)
-// TODO : 003. Tetromino drop faster depending on level
 // TODO : 004. Display upcoming tetromino
 // TODO : 005. Fast drop down by pressing ⬇️
 // TODO : 008. Display Blocchi title on the left upper corner of the screen a asset image
