@@ -26,6 +26,9 @@ struct TetrominoCell;
 #[derive(Component)]
 struct OccupiedCell;
 
+#[derive(Component)]
+struct BorderCell;
+
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
 enum GameStatus {
     #[default]
@@ -47,7 +50,6 @@ struct GameSettings {
 // TODO : 004. Display upcoming tetromino
 // TODO : 005. Fast drop down by pressing ⬇️
 // TODO : 008. Display Blocchi title on the left upper corner of the screen a asset image
-// TODO : 009. Update the method to outline blocks to use the spawned meshes and not the board
 // TODO : 010. Clean code by replacing u8 for cells with usize and by replacing (i8,i8) and (u8,u8) in the code to improve meaning
 // TODO : 011. Support game pause when pressing "Space Bar"
 // TODO : 012. Sound and background music
@@ -104,6 +106,7 @@ fn setup(
             }
 
             commands.spawn((
+                BorderCell,
                 Mesh2d(shape.clone()),
                 MeshMaterial2d(materials.add(GRAY)),
                 get_transform_from_row_and_col(row, col),
@@ -138,22 +141,15 @@ fn get_transform_from_row_and_col(row: u8, col: u8) -> Transform {
     )
 }
 
-fn paint_board_border_outline(mut gizmos: Gizmos) {
-    for row in 0..(game::NUMBER_OF_ROWS + 2) {
-        for col in 0..(game::NUMBER_OF_COLUMNS + 2) {
-            if row != 0 && row != (game::NUMBER_OF_ROWS + 1) {
-                if col != 0 && col != (game::NUMBER_OF_COLUMNS + 1) {
-                    continue;
-                }
-            }
-
-            let transform = get_transform_from_row_and_col(row, col);
-            gizmos.rect_2d(
-                Isometry2d::from_xy(transform.translation.x, transform.translation.y),
-                Vec2::splat(SQUARE_SIZE),
-                DARK_GRAY,
-            )
-        }
+fn paint_board_border_outline(
+    query : Query<&Transform, With<BorderCell>>,
+    mut gizmos: Gizmos) {
+    for  transform in query {
+        gizmos.rect_2d(
+            Isometry2d::from_xy(transform.translation.x, transform.translation.y),
+            Vec2::splat(SQUARE_SIZE),
+            DARK_GRAY,
+        )
     }
 }
 
@@ -175,21 +171,16 @@ fn paint_tetromino_outline(
     }
 }
 
-fn paint_occupied_cells_outline(mut gizmos: Gizmos, game_board: ResMut<game::GameBoard>) {
-    do_paint_occupied_cells_outline(&mut gizmos, &game_board);
-}
+fn paint_occupied_cells_outline(
+    query : Query<&Transform, With<OccupiedCell>>,
+    mut gizmos: Gizmos) {
 
-// TODO: We should not paint cells that have been despawned because row is filled up
-fn do_paint_occupied_cells_outline(gizmos: &mut Gizmos, game_board: &ResMut<game::GameBoard>) {
-    for cell in 0..(game::NUMBER_OF_ROWS * game::NUMBER_OF_COLUMNS) {
-        if game_board.is_cell_occupied(cell) {
-            let transformation = get_transform_by_board_cell(cell);
-            gizmos.rect_2d(
-                Isometry2d::from_xy(transformation.translation.x, transformation.translation.y),
-                Vec2::splat(SQUARE_SIZE),
-                GRAY,
-            )
-        }
+    for transform in query {
+        gizmos.rect_2d(
+            Isometry2d::from_xy(transform.translation.x, transform.translation.y),
+            Vec2::splat(SQUARE_SIZE),
+            GRAY,
+        )
     }
 }
 
@@ -197,7 +188,6 @@ fn move_and_rotate_tetromino(
     keys: Res<ButtonInput<KeyCode>>,
     mut game_board: ResMut<game::GameBoard>,
     mut query: Query<(Entity, &mut Transform), With<TetrominoCell>>,
-    mut gizmos: Gizmos,
 ) {
     let moved;
 
@@ -215,7 +205,7 @@ fn move_and_rotate_tetromino(
     }
 
     if let game::tetromino::MoveStatus::Moved = moved {
-        do_redraw_tetromino(&game_board, &mut query, &mut gizmos);
+        update_tetromino_position_of_cells(&game_board, &mut query);
     }
 }
 
@@ -223,7 +213,6 @@ fn drop_tetromino_down(
     mut commands: Commands,
     mut query: Query<(Entity, &mut Transform), With<TetrominoCell>>,
     mut game_board: ResMut<game::GameBoard>,
-    mut gizmos: Gizmos,
     time: Res<Time>,
     mut game_settings: ResMut<GameSettings>,
     mut rng: GlobalEntropy<ChaCha8Rng>,
@@ -239,7 +228,7 @@ fn drop_tetromino_down(
 
         match dropped {
             game::tetromino::DroppedStatus::Dropped => {
-                do_redraw_tetromino(&game_board, &mut query, &mut gizmos);
+                update_tetromino_position_of_cells(&game_board, &mut query);
             }
             game::tetromino::DroppedStatus::NotDropped(cells) => {
                 // Despawn the current tetromino
@@ -257,8 +246,6 @@ fn drop_tetromino_down(
                         get_transform_by_board_cell(cell),
                     ));
                 }
-
-                do_paint_occupied_cells_outline(&mut gizmos, &game_board);
 
                 // Is game-over?
                 let can_spawn_more_tetromino = game_board.next_tetromino(&mut rng);
@@ -388,10 +375,9 @@ fn do_spawn_tetromino(
     }
 }
 
-fn do_redraw_tetromino(
+fn update_tetromino_position_of_cells(
     game_board: &ResMut<game::GameBoard>,
     query: &mut Query<(Entity, &mut Transform), With<TetrominoCell>>,
-    gizmos: &mut Gizmos,
 ) {
     let cells = game_board.get_current_cells();
     for (index, (_, ref mut transform)) in query.iter_mut().enumerate() {
