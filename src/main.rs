@@ -1,48 +1,13 @@
 mod game;
+mod consts;
+mod ecs;
 
 use bevy::prelude::*;
 use bevy_prng::ChaCha8Rng;
 use bevy_rand::prelude::*;
 use std::time::Duration;
-
-const CLEAN_UP_OCCUPIED_ROWS_TIME_DELTA_MS : u64 = 5;
-const SQUARE_SIZE: f32 = 30.0;
-const ORANGE: Color = Color::linear_rgb(1.0, 0.647, 0.0);
-const RED: Color = Color::linear_rgb(1.0, 0.0, 0.0);
-const BLUE: Color = Color::linear_rgb(0.0, 0.0, 1.0);
-const DARK_BLUE: Color = Color::linear_rgb(0.0, 0.0, 0.392);
-const GREEN: Color = Color::linear_rgb(0.0, 1.0, 0.0);
-const DARK_GREEN: Color = Color::linear_rgb(0.0, 0.392, 0.0);
-const VIOLET: Color = Color::linear_rgb(0.498, 1.0, 1.0);
-const GRAY: Color = Color::linear_rgb(0.7, 0.7, 0.7);
-const PINK: Color = Color::linear_rgb(1.0, 0.753, 0.796);
-const YELLOW: Color = Color::linear_rgb(1.0, 1.00, 0.00);
-const DARK_GRAY: Color = Color::linear_rgb(0.3, 0.3, 0.3);
-
-
-#[derive(Component)]
-struct TetrominoCell;
-
-#[derive(Component)]
-struct OccupiedCell;
-
-#[derive(Component)]
-struct BorderCell;
-
-#[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
-enum GameStatus {
-    #[default]
-    Running,
-    RemovingFilledRows,
-    GameOver,
-}
-
-#[derive(Resource)]
-struct GameSettings {
-    descend_timer: Timer,
-    last_despawned_cell: Option<u8>,
-    remove_filled_cells_times: Timer,
-}
+use consts::*;
+use ecs::*;
 
 // TODO : 002. Display points and level (every 10 lines cleared level increases, 10 points for tetromino placed, 100 per line cleared)
 // TODO : 003. Tetromino drop faster depending on level

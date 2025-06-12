@@ -1,0 +1,15 @@
+use bevy::color::Color;
+
+pub const CLEAN_UP_OCCUPIED_ROWS_TIME_DELTA_MS : u64 = 5;
+pub const SQUARE_SIZE: f32 = 30.0;
+pub const ORANGE: Color = Color::linear_rgb(1.0, 0.647, 0.0);
+pub const RED: Color = Color::linear_rgb(1.0, 0.0, 0.0);
+pub const BLUE: Color = Color::linear_rgb(0.0, 0.0, 1.0);
+pub const DARK_BLUE: Color = Color::linear_rgb(0.0, 0.0, 0.392);
+pub const GREEN: Color = Color::linear_rgb(0.0, 1.0, 0.0);
+pub const DARK_GREEN: Color = Color::linear_rgb(0.0, 0.392, 0.0);
+pub const VIOLET: Color = Color::linear_rgb(0.498, 1.0, 1.0);
+pub const GRAY: Color = Color::linear_rgb(0.7, 0.7, 0.7);
+pub const PINK: Color = Color::linear_rgb(1.0, 0.753, 0.796);
+pub const YELLOW: Color = Color::linear_rgb(1.0, 1.00, 0.00);
+pub const DARK_GRAY: Color = Color::linear_rgb(0.3, 0.3, 0.3);
