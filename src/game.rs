@@ -132,6 +132,17 @@ impl GameBoard {
 
         true
     }
+    
+    pub fn get_number_of_filled_rows(&self) -> u8 {
+        let mut number_of_filled_rows = 0;
+        for row in 0..NUMBER_OF_ROWS {
+            if self.is_row_filled(row) {
+                number_of_filled_rows += 1;
+            }
+        }
+
+        number_of_filled_rows
+    }
 
     pub fn collapse_filled_rows(&mut self) {
         for row in (0..NUMBER_OF_ROWS).rev() {

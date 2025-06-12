@@ -6,6 +6,7 @@ use bevy::prelude::*;
 use bevy_prng::ChaCha8Rng;
 use bevy_rand::prelude::*;
 use std::time::Duration;
+use bevy::sprite::Anchor;
 use consts::*;
 use ecs::*;
 
@@ -23,6 +24,7 @@ fn main() {
     app.add_plugins(DefaultPlugins)
         .add_plugins(EntropyPlugin::<ChaCha8Rng>::default())
         .add_systems(Startup, setup)
+        .add_systems(Startup, setup_text_and_scores)
         .add_systems(
             Update,
             (
@@ -41,9 +43,12 @@ fn main() {
         .add_systems(Update, paint_board_border_outline)
         .insert_resource(game::GameBoard::new())
         .insert_resource(GameSettings {
-            descend_timer: Timer::new(Duration::from_millis(200), TimerMode::Repeating),
+            descend_timer: Timer::new(Duration::from_millis(BASE_SPEED_MS), TimerMode::Repeating),
             last_despawned_cell: None,
             remove_filled_cells_times: Timer::new(Duration::from_millis(CLEAN_UP_OCCUPIED_ROWS_TIME_DELTA_MS), TimerMode::Repeating),
+            level: 1,
+            filled_up_lines: 0,
+            score: 0,
         })
         .init_state::<GameStatus>();
     app.run();
@@ -95,6 +100,104 @@ fn setup(
             get_transform_by_board_cell(tetromino_cell),
         ));
     }
+}
+
+fn setup_text_and_scores(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    game_settings: Res<GameSettings>)
+{
+    let font = asset_server.load("fonts/NovaSquare-Regular.ttf");
+    let text_font = TextFont {
+        font: font.clone(),
+        font_size: 25.0,
+        ..default()
+    };
+
+    const TEXT_TOP : f32 = 325.00;
+    const FIXED_TEXT_X : f32 = 200.00;
+    const VARIABLE_TEXT_X : f32 = 300.00;
+    const LINE_SIZE : f32 = 30.00;
+
+    commands.spawn((
+        Text2d::new("Scores"),
+        text_font.clone(),
+        TextLayout::new_with_justify(JustifyText::Left),
+        Anchor::TopLeft,
+        Transform::from_translation(Vec3::new(FIXED_TEXT_X, TEXT_TOP, 0.0)),
+    ));
+
+    commands.spawn((
+        Text2d::new(game_settings.score.to_string()),
+        text_font.clone(),
+        TextLayout::new_with_justify(JustifyText::Left),
+        Anchor::TopLeft,
+        Transform::from_translation(Vec3::new(VARIABLE_TEXT_X, TEXT_TOP, 0.0)),
+        TextColor(RED),
+        ScoreText,
+    ));
+
+    commands.spawn((
+        Text2d::new("Level"),
+        text_font.clone(),
+        TextLayout::new_with_justify(JustifyText::Left),
+        Anchor::TopLeft,
+        Transform::from_translation(Vec3::new(FIXED_TEXT_X, TEXT_TOP - LINE_SIZE, 0.0)),
+    ));
+
+    commands.spawn((
+        Text2d::new(game_settings.level.to_string()),
+        text_font.clone(),
+        TextLayout::new_with_justify(JustifyText::Left),
+        Anchor::TopLeft,
+        Transform::from_translation(Vec3::new(VARIABLE_TEXT_X, TEXT_TOP - LINE_SIZE, 0.0)),
+        TextColor(RED),
+        LevelText,
+    ));
+
+    commands.spawn((
+        Text2d::new("Cleared"),
+        text_font.clone(),
+        TextLayout::new_with_justify(JustifyText::Left),
+        Anchor::TopLeft,
+        Transform::from_translation(Vec3::new(FIXED_TEXT_X, TEXT_TOP - LINE_SIZE * 2.00, 0.0)),
+    ));
+
+    commands.spawn((
+        Text2d::new(game_settings.filled_up_lines.to_string()),
+        text_font.clone(),
+        TextLayout::new_with_justify(JustifyText::Left),
+        Anchor::TopLeft,
+        Transform::from_translation(Vec3::new(VARIABLE_TEXT_X, TEXT_TOP - LINE_SIZE * 2.00, 0.0)),
+        TextColor(RED),
+        ClearedText,
+    ));
+
+    commands.spawn((
+        Text2d::new("Δms"),
+        text_font.clone(),
+        TextLayout::new_with_justify(JustifyText::Left),
+        Anchor::TopLeft,
+        Transform::from_translation(Vec3::new(FIXED_TEXT_X, TEXT_TOP - LINE_SIZE * 3.00, 0.0)),
+    ));
+
+    commands.spawn((
+        Text2d::new(BASE_SPEED_MS.to_string()),
+        text_font.clone(),
+        TextLayout::new_with_justify(JustifyText::Left),
+        Anchor::TopLeft,
+        Transform::from_translation(Vec3::new(VARIABLE_TEXT_X, TEXT_TOP - LINE_SIZE * 3.00, 0.0)),
+        TextColor(RED),
+        DropDownMsText,
+    ));
+
+    commands.spawn((
+        Text2d::new("Next"),
+        text_font.clone(),
+        TextLayout::new_with_justify(JustifyText::Left),
+        Anchor::TopLeft,
+        Transform::from_translation(Vec3::new(FIXED_TEXT_X, TEXT_TOP - LINE_SIZE * 4.00, 0.0)),
+    ));
 }
 
 fn get_transform_from_row_and_col(row: u8, col: u8) -> Transform {
@@ -176,6 +279,10 @@ fn move_and_rotate_tetromino(
 fn drop_tetromino_down(
     mut commands: Commands,
     mut query: Query<(Entity, &mut Transform), With<TetrominoCell>>,
+    mut score_text:  Single<&mut Text2d, With<ScoreText>>,
+    mut level_text:  Single<&mut Text2d, (With<LevelText>, Without<ScoreText>)>,
+    mut cleared_text:  Single<&mut Text2d, (With<ClearedText>, Without<LevelText>, Without<ScoreText>)>,
+    mut drop_down_ms_text:  Single<&mut Text2d, (With<DropDownMsText>, Without<LevelText>, Without<ScoreText>, Without<ClearedText>)>,
     mut game_board: ResMut<game::GameBoard>,
     time: Res<Time>,
     mut game_settings: ResMut<GameSettings>,
@@ -195,6 +302,9 @@ fn drop_tetromino_down(
                 update_tetromino_position_of_cells(&game_board, &mut query);
             }
             game::tetromino::DroppedStatus::NotDropped(cells) => {
+
+                game_settings.score += POINTS_FOR_TETROMINO_DROPPED;
+
                 // Despawn the current tetromino
                 for (entity, _) in query {
                     commands.entity(entity).despawn();
@@ -216,9 +326,15 @@ fn drop_tetromino_down(
                 match can_spawn_more_tetromino {
                     game::tetromino::CanSpawnMoreTetromino::Yes => {
                         // If not-dropped we need to check if any line has been filled up so they can be exploded
-                        if let Some(_) = game_board.get_next_cell_from_filled_row_after(None) {
+                        let number_of_filled_rows = game_board.get_number_of_filled_rows();
+                        if number_of_filled_rows > 0 {
                             game_settings.last_despawned_cell = None;
                             game_settings.remove_filled_cells_times.reset();
+
+                            game_settings.score += number_of_filled_rows as u32 * POINTS_FOR_CLEARED_ROW;
+                            game_settings.filled_up_lines += number_of_filled_rows as u32;
+                            game_settings.level = std::cmp::min(MAX_LEVEL, game_settings.filled_up_lines as u16 / CLEARED_UP_LINES_PER_LEVEL + 1);
+
                             next_state.set(GameStatus::RemovingFilledRows);
                         } else {
                             do_spawn_tetromino(
@@ -233,6 +349,21 @@ fn drop_tetromino_down(
                         next_state.set(GameStatus::GameOver);
                     }
                 }
+
+                // Update the timer
+                let mut expected_speed_delta = (game_settings.level - 1) as u64 * LEVEL_SPEED_DELTA;
+                if expected_speed_delta > BASE_SPEED_MS - MIN_SPEED_MS {
+                    expected_speed_delta = BASE_SPEED_MS - MIN_SPEED_MS;
+                }
+
+                let drop_down_ms = BASE_SPEED_MS - expected_speed_delta;
+                game_settings.descend_timer = Timer::new(Duration::from_millis(drop_down_ms), TimerMode::Repeating);
+
+                // Update the text messages
+                score_text.0 = game_settings.score.to_string();
+                cleared_text.0 = game_settings.filled_up_lines.to_string();
+                level_text.0 = game_settings.level.to_string();
+                drop_down_ms_text.0 = drop_down_ms.to_string();
             }
         }
 
