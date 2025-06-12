@@ -69,7 +69,7 @@ impl TetrominoType {
     where
         R: Rng + ?Sized,
     {
-        return TetrominoType::T; // TODO : REMOVE ONCE TESTS HAVE BEEN COMPLETED
+        return TetrominoType::Z; // TODO : REMOVE ONCE TESTS HAVE BEEN COMPLETED
 
         let random_value = rng.random_range(1..=7);
         match random_value {
@@ -109,8 +109,22 @@ impl TetrominoType {
             }
             TetrominoType::J => todo!(),
             TetrominoType::L => todo!(),
-            TetrominoType::S => todo!(),
-            TetrominoType::Z => todo!(),
+            TetrominoType::S => match rotation {
+                TetrominoRotation::Zero => TetrominoRotation::HalfPi,
+                TetrominoRotation::HalfPi => TetrominoRotation::Zero,
+                _ => panic!(
+                "Type '{0}' does not support rotation '{1}'!",
+                &self, rotation
+                ),
+            }
+            TetrominoType::Z => match rotation {
+                TetrominoRotation::Zero => TetrominoRotation::HalfPi,
+                TetrominoRotation::HalfPi => TetrominoRotation::Zero,
+                _ => panic!(
+                    "Type '{0}' does not support rotation '{1}'!",
+                    &self, rotation
+                ),
+            }
         }
     }
 
@@ -134,8 +148,8 @@ impl TetrominoType {
             },
             TetrominoType::J => todo!(), // 3,
             TetrominoType::L => todo!(), // 3,
-            TetrominoType::S => todo!(), // 2,
-            TetrominoType::Z => todo!(), // 2,
+            TetrominoType::S => 2,
+            TetrominoType::Z => 2,
         }
     }
 }
@@ -244,27 +258,50 @@ impl Tetromino {
         }
 
         fn handle_s(position: &TetrominoPosition, rotation: &TetrominoRotation) -> [(i8, i8); 4] {
-            todo!("Handle rotation")
-            // let row = position.row as i8;
-            // let col = position.col as i8;
-            // [
-            //     (row, col),
-            //     (row + 1, col),
-            //     (row, col + 1),
-            //     (row + 1, col - 1),
-            // ]
+            let row = position.row as i8;
+            let col = position.col as i8;
+
+            match rotation {
+                TetrominoRotation::Zero => [
+                    (row, col),
+                    (row + 1, col),
+                    (row, col + 1),
+                    (row + 1, col - 1),
+                ],
+                TetrominoRotation::HalfPi => [
+                    (row, col),
+                    (row - 1, col),
+                    (row, col + 1),
+                    (row + 1, col + 1),
+                ],
+                _ => panic!("Type '{0}' does not support rotation '{1}'!", TetrominoType::S, rotation
+                ),
+            }
         }
 
         fn handle_z(position: &TetrominoPosition, rotation: &TetrominoRotation) -> [(i8, i8); 4] {
-            todo!("Handle rotation")
-            // let row = position.row as i8;
-            // let col = position.col as i8;
-            // [
-            //     (row, col),
-            //     (row + 1, col),
-            //     (row, col - 1),
-            //     (row + 1, col + 1),
-            // ]
+
+            let row = position.row as i8;
+            let col = position.col as i8;
+
+            match rotation {
+                TetrominoRotation::Zero => [
+                    (row, col),
+                    (row + 1, col),
+                    (row, col - 1),
+                    (row + 1, col + 1),
+                ],
+                TetrominoRotation::HalfPi => [
+                    (row, col),
+                    (row - 1, col),
+                    (row, col - 1),
+                    (row + 1, col - 1),
+                ],
+                _ => panic!("Type '{0}' does not support rotation '{1}'!", TetrominoType::S, rotation
+                ),
+            }
+
+
         }
 
         match self.tetromino {
