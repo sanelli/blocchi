@@ -10,15 +10,13 @@ use consts::*;
 use ecs::*;
 use std::time::Duration;
 
-// TODO : 008. Display Blocchi title on the left upper corner of the screen a asset image
-// TODO : 012. Sound and background music
-// TODO : 0134 Start new game by pressing N
 fn main() {
     let mut app = App::new();
     app.add_plugins(DefaultPlugins)
         .add_plugins(EntropyPlugin::<ChaCha8Rng>::default())
         .add_systems(Startup, setup)
         .add_systems(Startup, setup_text_and_scores)
+        .add_systems(Update, restart)
         .add_systems(
             Update,
             (move_and_rotate_tetromino, drop_tetromino_down)
@@ -39,6 +37,7 @@ fn main() {
         .add_systems(
             Update,
             paint_upcoming_tetromino_outline
+                .after(restart)
                 .run_if(in_any_of_two_states(GameStatus::Running, GameStatus::Pause)),
         )
         .add_systems(Update, pause)
@@ -643,6 +642,92 @@ fn pause(
                     PausedText,
                 ));
             }
+        }
+    }
+}
+
+fn restart(
+    mut commands: Commands,
+    mut game_settings: ResMut<GameSettings>,
+    mut next_state: ResMut<NextState<GameStatus>>,
+    keys: Res<ButtonInput<KeyCode>>,
+    mut rng: GlobalEntropy<ChaCha8Rng>,
+    mut game_board: ResMut<game::GameBoard>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    tetromino_cells: Query<Entity, With<TetrominoCell>>,
+    occupied_cells: Query<Entity, (With<OccupiedCell>, Without<TetrominoCell>)>,
+    paused_text: Query<
+        Entity,
+        (
+            With<PausedText>,
+            Without<OccupiedCell>,
+            Without<TetrominoCell>,
+        ),
+    >,
+    upcoming_tetromino: Query<
+        Entity,
+        (
+            With<UpcomingTetrominoCell>,
+            Without<PausedText>,
+            Without<OccupiedCell>,
+            Without<TetrominoCell>,
+        ),
+    >,
+) {
+    if keys.just_pressed(KeyCode::KeyN) {
+        // Status back to Running
+        next_state.set(GameStatus::Running);
+
+        // Reset game settings
+        game_settings.last_status = None;
+        game_settings.descend_timer =
+            Timer::new(Duration::from_millis(BASE_SPEED_MS), TimerMode::Repeating);
+        game_settings.level = 1;
+        game_settings.score = 0;
+        game_settings.last_despawned_cell = None;
+        game_settings.filled_up_lines = 0;
+        game_settings.remove_filled_cells_times.reset();
+
+        // Despawn paused text
+        for entity in paused_text {
+            commands.entity(entity).despawn();
+        }
+
+        // Reset the board
+        game_board.reset(&mut rng);
+
+        // Despawn filled up cells
+        for entity in occupied_cells {
+            commands.entity(entity).despawn();
+        }
+
+        // Spawn upcoming
+        let upcoming_type = game_board.get_upcoming_tetromino_type();
+        let upcoming_cells = game_board.get_upcoming_tetromino_cells();
+        let upcoming_color = get_tetromino_color_by_type(&upcoming_type);
+        let shape = meshes.add(Rectangle::new(SQUARE_SIZE, SQUARE_SIZE));
+
+        for upcoming_tetromino_cell in upcoming_cells {
+            commands.spawn((
+                UpcomingTetrominoCell,
+                Mesh2d(shape.clone()),
+                MeshMaterial2d(materials.add(*upcoming_color)),
+                get_upcoming_tetromino_position_for_cell(upcoming_tetromino_cell),
+            ));
+        }
+
+        // Despawn tetromino
+        for entity in tetromino_cells {
+            commands.entity(entity).despawn();
+        }
+
+        // Spawn tetromino
+        do_spawn_tetromino(&mut commands, &mut game_board, materials, shape);
+
+        // Despawn upcoming tetromino
+        for entity in upcoming_tetromino {
+            commands.entity(entity).despawn();
         }
     }
 }

@@ -42,6 +42,19 @@ impl GameBoard {
         }
     }
 
+    pub fn reset<R>(&mut self, rng: &mut R)
+    where
+        R: Rng + ?Sized,
+    {
+        if let Some(provider) = &mut self.provider {
+            self.board = [0; NUMBER_OF_ROWS as usize * NUMBER_OF_COLUMNS as usize];
+            provider.next(rng, &self.board);
+            provider.next(rng, &self.board);
+        } else {
+            panic!("Provider has not been initialized.");
+        }
+    }
+
     pub fn get_current_tetromino_type(&self) -> &TetrominoType {
         if let Some(provider) = &self.provider {
             provider.get_current_tetromino_type()
