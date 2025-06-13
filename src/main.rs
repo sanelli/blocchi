@@ -604,10 +604,13 @@ fn get_upcoming_tetromino_position_for_cell(cell: u8) -> Transform {
 }
 
 fn pause(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
     state: Res<State<GameStatus>>,
     mut next_state: ResMut<NextState<GameStatus>>,
     keys: Res<ButtonInput<KeyCode>>,
     mut game_settings: ResMut<GameSettings>,
+    paused_text: Query<Entity, With<PausedText>>,
 ) {
     if keys.just_pressed(KeyCode::Space) {
         match state.get() {
@@ -615,10 +618,30 @@ fn pause(
                 if let Some(previous_state) = &game_settings.last_status {
                     next_state.set(previous_state.clone());
                 }
+
+                for entity in paused_text {
+                    commands.entity(entity).despawn();
+                }
             }
             _ => {
                 game_settings.last_status = Some(state.get().clone());
                 next_state.set(GameStatus::Pause);
+
+                let font = asset_server.load("fonts/NovaSquare-Regular.ttf");
+                let text_font = TextFont {
+                    font: font.clone(),
+                    font_size: 90.0,
+                    ..default()
+                };
+
+                commands.spawn((
+                    Text2d::new("Paused"),
+                    text_font.clone(),
+                    Anchor::Center,
+                    TextColor(BLUE),
+                    Transform::from_translation(Vec3::new(0.00, 0.00, 10.0)),
+                    PausedText,
+                ));
             }
         }
     }

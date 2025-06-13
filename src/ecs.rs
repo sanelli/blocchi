@@ -24,6 +24,9 @@ pub struct ClearedText;
 #[derive(Component)]
 pub struct DropDownMsText;
 
+#[derive(Component)]
+pub struct PausedText;
+
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum GameStatus {
     #[default]
