@@ -117,7 +117,7 @@ impl GameBoard {
         for row in (0..=max_row).rev() {
             if self.is_row_filled(row) {
                 if max_col < (NUMBER_OF_COLUMNS - 1) {
-                    let col =max_col + (if increment { 1 } else { 0 });
+                    let col = max_col + (if increment { 1 } else { 0 });
                     return Some(tetromino::Tetromino::get_cell_from_row_and_column(row, col));
                 } else {
                     // Being at the end of the col I move to be at the beginning again
@@ -148,7 +148,7 @@ impl GameBoard {
 
         true
     }
-    
+
     pub fn get_number_of_filled_rows(&self) -> u8 {
         let mut number_of_filled_rows = 0;
         for row in 0..NUMBER_OF_ROWS {

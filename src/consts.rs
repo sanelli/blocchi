@@ -1,6 +1,6 @@
 use bevy::color::Color;
 
-pub const CLEAN_UP_OCCUPIED_ROWS_TIME_DELTA_MS : u64 = 5;
+pub const CLEAN_UP_OCCUPIED_ROWS_TIME_DELTA_MS: u64 = 5;
 pub const SQUARE_SIZE: f32 = 30.0;
 pub const ORANGE: Color = Color::linear_rgb(1.0, 0.647, 0.0);
 pub const RED: Color = Color::linear_rgb(1.0, 0.0, 0.0);
@@ -13,10 +13,10 @@ pub const GRAY: Color = Color::linear_rgb(0.7, 0.7, 0.7);
 pub const PINK: Color = Color::linear_rgb(1.0, 0.753, 0.796);
 pub const YELLOW: Color = Color::linear_rgb(1.0, 1.00, 0.00);
 pub const DARK_GRAY: Color = Color::linear_rgb(0.3, 0.3, 0.3);
-pub const POINTS_FOR_CLEARED_ROW : u32 = 100;
-pub const POINTS_FOR_TETROMINO_DROPPED : u32 = 10;
-pub const CLEARED_UP_LINES_PER_LEVEL : u16 = 10;
-pub const MAX_LEVEL : u16 = 255;
-pub const BASE_SPEED_MS : u64 = 800;
-pub const LEVEL_SPEED_DELTA : u64 = 25;
-pub const MIN_SPEED_MS : u64 = 50;
+pub const POINTS_FOR_CLEARED_ROW: u32 = 100;
+pub const POINTS_FOR_TETROMINO_DROPPED: u32 = 10;
+pub const CLEARED_UP_LINES_PER_LEVEL: u16 = 10;
+pub const MAX_LEVEL: u16 = 255;
+pub const BASE_SPEED_MS: u64 = 800;
+pub const LEVEL_SPEED_DELTA: u64 = 25;
+pub const MIN_SPEED_MS: u64 = 50;

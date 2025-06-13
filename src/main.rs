@@ -11,10 +11,8 @@ use ecs::*;
 use std::time::Duration;
 
 // TODO : 008. Display Blocchi title on the left upper corner of the screen a asset image
-// TODO : 010. Clean code by replacing u8 for cells with usize and by replacing (i8,i8) and (u8,u8) in the code to improve meaning
-// TODO : 011. Support game pause when pressing "Space Bar"
 // TODO : 012. Sound and background music
-// TODO : 013. In pause show menu to restart game, exit, enable/disable sound effects, enable.disable bg music
+// TODO : 0134 Start new game by pressing N
 fn main() {
     let mut app = App::new();
     app.add_plugins(DefaultPlugins)
@@ -23,13 +21,14 @@ fn main() {
         .add_systems(Startup, setup_text_and_scores)
         .add_systems(
             Update,
-            (
-                move_and_rotate_tetromino,
-                drop_tetromino_down,
-                paint_tetromino_outline,
-            )
+            (move_and_rotate_tetromino, drop_tetromino_down)
                 .chain()
                 .run_if(in_state(GameStatus::Running)),
+        )
+        .add_systems(
+            Update,
+            paint_tetromino_outline
+                .run_if(in_any_of_two_states(GameStatus::Running, GameStatus::Pause)),
         )
         .add_systems(
             Update,
@@ -37,7 +36,12 @@ fn main() {
         )
         .add_systems(Update, paint_occupied_cells_outline)
         .add_systems(Update, paint_board_border_outline)
-        .add_systems(Update, paint_upcoming_tetromino_outline.run_if(in_state(GameStatus::Running)))
+        .add_systems(
+            Update,
+            paint_upcoming_tetromino_outline
+                .run_if(in_any_of_two_states(GameStatus::Running, GameStatus::Pause)),
+        )
+        .add_systems(Update, pause)
         .insert_resource(game::GameBoard::new())
         .insert_resource(GameSettings {
             descend_timer: Timer::new(Duration::from_millis(BASE_SPEED_MS), TimerMode::Repeating),
@@ -49,9 +53,20 @@ fn main() {
             level: 1,
             filled_up_lines: 0,
             score: 0,
+            last_status: None,
         })
         .init_state::<GameStatus>();
     app.run();
+}
+
+pub fn in_any_of_two_states<S: States>(
+    state1: S,
+    state2: S,
+) -> impl FnMut(Option<Res<State<S>>>) -> bool + Clone {
+    move |current_state: Option<Res<State<S>>>| match current_state {
+        Some(current_state) => *current_state == state1 || *current_state == state2,
+        None => false,
+    }
 }
 
 fn setup(
@@ -362,7 +377,6 @@ fn drop_tetromino_down(
                 let can_spawn_more_tetromino = game_board.next_tetromino(&mut rng);
                 match can_spawn_more_tetromino {
                     game::tetromino::CanSpawnMoreTetromino::Yes => {
-
                         // Display upcoming tetromino
                         let upcoming_type = game_board.get_upcoming_tetromino_type();
                         let upcoming_cells = game_board.get_upcoming_tetromino_cells();
@@ -398,7 +412,12 @@ fn drop_tetromino_down(
 
                             next_state.set(GameStatus::RemovingFilledRows);
                         } else {
-                            do_spawn_tetromino(&mut commands, &mut game_board, materials, shape.clone());
+                            do_spawn_tetromino(
+                                &mut commands,
+                                &mut game_board,
+                                materials,
+                                shape.clone(),
+                            );
                         }
                     }
                     game::tetromino::CanSpawnMoreTetromino::No => {
@@ -578,7 +597,29 @@ fn get_upcoming_tetromino_position_for_cell(cell: u8) -> Transform {
     let (row, col) = game::tetromino::Tetromino::get_row_and_column_by_cell(cell);
     Transform::from_xyz(
         280.00 + SQUARE_SIZE / 2.0 - 6.0 * SQUARE_SIZE + (col + 1) as f32 * SQUARE_SIZE,
-        SQUARE_SIZE / 2.0 - 11.0 * SQUARE_SIZE + (game::NUMBER_OF_ROWS - row) as f32 * SQUARE_SIZE - 150.00,
+        SQUARE_SIZE / 2.0 - 11.0 * SQUARE_SIZE + (game::NUMBER_OF_ROWS - row) as f32 * SQUARE_SIZE
+            - 150.00,
         0.0,
     )
+}
+
+fn pause(
+    state: Res<State<GameStatus>>,
+    mut next_state: ResMut<NextState<GameStatus>>,
+    keys: Res<ButtonInput<KeyCode>>,
+    mut game_settings: ResMut<GameSettings>,
+) {
+    if keys.just_pressed(KeyCode::Space) {
+        match state.get() {
+            GameStatus::Pause => {
+                if let Some(previous_state) = &game_settings.last_status {
+                    next_state.set(previous_state.clone());
+                }
+            }
+            _ => {
+                game_settings.last_status = Some(state.get().clone());
+                next_state.set(GameStatus::Pause);
+            }
+        }
+    }
 }

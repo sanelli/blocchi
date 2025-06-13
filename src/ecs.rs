@@ -30,6 +30,7 @@ pub enum GameStatus {
     Running,
     RemovingFilledRows,
     GameOver,
+    Pause,
 }
 
 #[derive(Resource)]
@@ -40,4 +41,5 @@ pub struct GameSettings {
     pub level: u16,
     pub filled_up_lines: u32,
     pub score: u32,
+    pub last_status: Option<GameStatus>,
 }

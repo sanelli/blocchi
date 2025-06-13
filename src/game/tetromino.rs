@@ -252,38 +252,30 @@ impl Tetromino {
             let row = position.row as i8;
             let col = position.col as i8;
             match rotation {
-                TetrominoRotation::Zero => {
-                    [
-                        (row, col),
-                        (row + 1, col),
-                        (row + 2, col),
-                        (row + 2, col - 1),
-                    ]
-                }
-                TetrominoRotation::HalfPi => {
-                    [
-                        (row, col),
-                        (row, col + 1),
-                        (row, col + 2),
-                        (row + 1, col + 2),
-                    ]
-                }
-                TetrominoRotation::Pi => {
-                    [
-                        (row, col),
-                        (row - 1, col),
-                        (row - 2, col),
-                        (row - 2, col + 1),
-                    ]
-                }
-                TetrominoRotation::ThreeHalfPi => {
-                    [
-                        (row, col),
-                        (row, col - 1),
-                        (row, col - 2),
-                        (row - 1, col - 2),
-                    ]
-                }
+                TetrominoRotation::Zero => [
+                    (row, col),
+                    (row + 1, col),
+                    (row + 2, col),
+                    (row + 2, col - 1),
+                ],
+                TetrominoRotation::HalfPi => [
+                    (row, col),
+                    (row, col + 1),
+                    (row, col + 2),
+                    (row + 1, col + 2),
+                ],
+                TetrominoRotation::Pi => [
+                    (row, col),
+                    (row - 1, col),
+                    (row - 2, col),
+                    (row - 2, col + 1),
+                ],
+                TetrominoRotation::ThreeHalfPi => [
+                    (row, col),
+                    (row, col - 1),
+                    (row, col - 2),
+                    (row - 1, col - 2),
+                ],
             }
         }
 
@@ -291,38 +283,30 @@ impl Tetromino {
             let row = position.row as i8;
             let col = position.col as i8;
             match rotation {
-                TetrominoRotation::Zero => {
-                    [
-                        (row, col),
-                        (row + 1, col),
-                        (row + 2, col),
-                        (row + 2, col + 1),
-                    ]
-                }
-                TetrominoRotation::HalfPi => {
-                    [
-                        (row, col),
-                        (row , col + 1),
-                        (row , col + 2),
-                        (row - 1, col + 2),
-                    ]
-                }
-                TetrominoRotation::Pi => {
-                    [
-                        (row, col),
-                        (row - 1, col),
-                        (row - 2, col),
-                        (row - 2, col - 1),
-                    ]
-                }
-                TetrominoRotation::ThreeHalfPi => {
-                    [
-                        (row, col),
-                        (row , col - 1),
-                        (row , col - 2),
-                        (row + 1, col - 2),
-                    ]
-                }
+                TetrominoRotation::Zero => [
+                    (row, col),
+                    (row + 1, col),
+                    (row + 2, col),
+                    (row + 2, col + 1),
+                ],
+                TetrominoRotation::HalfPi => [
+                    (row, col),
+                    (row, col + 1),
+                    (row, col + 2),
+                    (row - 1, col + 2),
+                ],
+                TetrominoRotation::Pi => [
+                    (row, col),
+                    (row - 1, col),
+                    (row - 2, col),
+                    (row - 2, col - 1),
+                ],
+                TetrominoRotation::ThreeHalfPi => [
+                    (row, col),
+                    (row, col - 1),
+                    (row, col - 2),
+                    (row + 1, col - 2),
+                ],
             }
         }
 
